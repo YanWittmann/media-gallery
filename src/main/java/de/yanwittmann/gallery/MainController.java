@@ -1,6 +1,7 @@
 package de.yanwittmann.gallery;
 
 import de.yanwittmann.gallery.media.MediaService;
+import de.yanwittmann.gallery.media.config.ConfigField;
 import de.yanwittmann.gallery.util.ImageUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -12,9 +13,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,17 +40,17 @@ public class MainController {
         ImageUtil.initializeThumbnailCleanup(MediaGalleryConfig.getThumbsDir());
     }
 
-    @GetMapping("/media/page/count")
-    public String getMedia() {
-        return new JSONObject().put("total", String.valueOf(mediaService.getPageCount())).toString();
+    @GetMapping("/media/page/count/{includeVideos}")
+    public String getMedia(@PathVariable boolean includeVideos) {
+        return new JSONObject().put("total", String.valueOf(mediaService.getPageCount(includeVideos))).toString();
     }
 
-    @GetMapping("/media/page/{page}")
-    public String getMedia(@PathVariable int page) throws SQLException {
+    @GetMapping("/media/page/{page}/{orderBy}/{asc}/{includeVideos}")
+    public String getMedia(@PathVariable int page, @PathVariable String orderBy, @PathVariable boolean asc, @PathVariable boolean includeVideos) throws SQLException {
         return new JSONObject()
-                .put("ids", new JSONArray(mediaService.getMediaIds(page).stream().map(Object::toString).collect(Collectors.toList())))
+                .put("ids", new JSONArray(mediaService.getMediaIds(page, orderBy, asc, includeVideos).stream().map(Object::toString).collect(Collectors.toList())))
                 .put("page", page)
-                .put("total", mediaService.getPageCount())
+                .put("total", mediaService.getPageCount(includeVideos))
                 .toString();
     }
 
@@ -73,11 +72,97 @@ public class MainController {
         return buildResponseEntityForFile(thumbnailFile);
     }
 
+    @GetMapping("/media/get/{id}/type")
+    public String getMediaType(@PathVariable long id) {
+        final File file = mediaService.getMediaFile(id);
+        return new JSONObject()
+                .put("type", file == null ? "unknown" : file.getName().endsWith(".mp4") ? "vid" : "img")
+                .toString();
+    }
+
     @GetMapping("/settings/get")
     public String getMediaThumb() {
         return new JSONObject()
                 .put("settings", mediaService.getSettings().toJson())
                 .toString();
+    }
+
+    @PostMapping("/settings/path/rescan")
+    public String postSettingsPathRescan(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final String path = request.getString("path");
+        if (path == null) {
+            return new JSONObject().put("success", false).put("message", "Missing path").toString();
+        }
+
+        final File file = new File(path);
+
+        mediaService.rescanMedia(file);
+        return new JSONObject().put("success", true).toString();
+    }
+
+    @PostMapping("/settings/path/remove")
+    public String postSettingsPathRemove(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final String path = request.getString("path");
+        if (path == null) {
+            return new JSONObject().put("success", false).put("message", "Missing path").toString();
+        }
+
+        final File file = new File(path);
+
+        mediaService.removeMedia(file);
+        return new JSONObject().put("success", true).toString();
+    }
+
+    @PostMapping("/settings/path/disable")
+    public String postSettingsPathDisable(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final String path = request.getString("path");
+        if (path == null) {
+            return new JSONObject().put("success", false).put("message", "Missing path").toString();
+        }
+
+        final File file = new File(path);
+
+        mediaService.disableMedia(file);
+        return new JSONObject().put("success", true).toString();
+    }
+
+    @PostMapping("/settings/path/enable")
+    public String postSettingsPathEnable(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final String path = request.getString("path");
+        if (path == null) {
+            return new JSONObject().put("success", false).put("message", "Missing path").toString();
+        }
+
+        final File file = new File(path);
+
+        mediaService.enableMedia(file);
+        return new JSONObject().put("success", true).toString();
+    }
+
+    @PostMapping("/settings/path/add")
+    public String postSettingsPathAdd(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final String path = request.getString("path");
+        if (path == null) {
+            return new JSONObject().put("success", false).put("message", "Missing path").toString();
+        }
+
+        final File file = new File(path);
+
+        mediaService.addMedia(file);
+        return new JSONObject().put("success", true).toString();
+    }
+
+    @PostMapping("/settings/reindex-on-startup")
+    public String postSettingsReindexOnStartup(@RequestBody String requestBody) {
+        final JSONObject request = new JSONObject(requestBody);
+        final boolean checked = request.getBoolean("checked");
+        mediaService.getSettings().set(ConfigField.INDEX_ON_STARTUP, checked);
+        return new JSONObject().put("success", true).toString();
     }
 
     private ResponseEntity<Resource> buildResponseEntityForFile(File file) throws IOException {

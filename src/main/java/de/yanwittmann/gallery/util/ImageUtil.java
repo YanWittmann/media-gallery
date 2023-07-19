@@ -1,5 +1,10 @@
 package de.yanwittmann.gallery.util;
 
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.Java2DFrameConverter;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -12,10 +17,10 @@ import java.util.concurrent.TimeUnit;
 
 public class ImageUtil {
 
-    //private static final long MAX_THUMB_AGE = TimeUnit.MINUTES.toMillis(5);
-    //private static final long DELETE_INTERVAL = TimeUnit.MINUTES.toMillis(1);
-    private static final long MAX_THUMB_AGE = TimeUnit.SECONDS.toMillis(10);
-    private static final long DELETE_INTERVAL = TimeUnit.SECONDS.toMillis(2);
+    private static final long MAX_THUMB_AGE = TimeUnit.MINUTES.toMillis(5);
+    private static final long DELETE_INTERVAL = TimeUnit.MINUTES.toMillis(1);
+    //private static final long MAX_THUMB_AGE = TimeUnit.SECONDS.toMillis(10);
+    //private static final long DELETE_INTERVAL = TimeUnit.SECONDS.toMillis(2);
 
 
     public static void initializeThumbnailCleanup(File directoryPath) {
@@ -38,12 +43,34 @@ public class ImageUtil {
         }, DELETE_INTERVAL, DELETE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
+    public static BufferedImage extractFirstFrameFromVideo(final File videoFile) throws FrameGrabber.Exception {
+        final FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile);
+        grabber.start();
+
+        final Java2DFrameConverter converter = new Java2DFrameConverter();
+        final Frame frame = grabber.grabImage();
+        final BufferedImage bufferedImage = converter.convert(frame);
+
+        grabber.stop();
+        return bufferedImage;
+    }
+
     public static File createThumbnail(File originalFile, File thumbnailFile, int maxSize) throws IOException {
         if (thumbnailFile.exists()) {
             return thumbnailFile;
         }
 
-        BufferedImage originalImage = ImageIO.read(originalFile);
+        BufferedImage originalImage;
+        if (originalFile.getName().endsWith(".mp4")) {
+            try {
+                originalImage = extractFirstFrameFromVideo(originalFile);
+            } catch (FrameGrabber.Exception e) {
+                throw new RuntimeException("Failed to extract thumbnail from video file: " + originalFile.getAbsolutePath(), e);
+            }
+        } else {
+            originalImage = ImageIO.read(originalFile);
+        }
+
 
         int width = originalImage.getWidth();
         int height = originalImage.getHeight();

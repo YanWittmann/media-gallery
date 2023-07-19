@@ -1,7 +1,6 @@
 const THUMBNAIL_SIZE = 400;
 
 const gallery = document.getElementById('gallery');
-gallery.dataset.columns = '';
 const fullsizeImage = document.getElementById('fullsize-image');
 const fullsizeContainer = document.getElementById('fullsize-container');
 const fullsizePrev = document.getElementById('fullsize-prev');
@@ -12,8 +11,12 @@ let totalPages = 0;
 
 let currentlyActiveFullscreenImageId = null;
 
+let orderBy = 'date';
+let orderAsc = false;
+let orderByIncludeVideos = false;
+
 // Fetch the total number of pages
-axios.get('/media/page/count')
+axios.get('/media/page/count/' + orderByIncludeVideos)
     .then(response => {
         totalPages = response.data.total;
         console.log(`Total pages: ${totalPages}`);
@@ -30,32 +33,6 @@ const pageObserver = new IntersectionObserver(entries => {
     });
 });
 
-function loadNextPage() {
-    if (currentPage < totalPages) {
-        axios.get(`/media/page/${currentPage}`)
-            .then(response => {
-                let lastPlaceholder;
-                response.data.ids.forEach(id => {
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'gallery-item-container';
-                    placeholder.dataset.id = id;
-                    gallery.appendChild(placeholder);
-                    imageObserver.observe(placeholder);
-                    lastPlaceholder = placeholder;
-                    placeholder.onclick = () => {
-                        showFullSizeImage(placeholder);
-                    };
-                });
-                currentPage++;
-
-                // Observe the last image placeholder to trigger the pageObserver
-                if (lastPlaceholder) {
-                    pageObserver.observe(lastPlaceholder);
-                }
-            });
-    }
-}
-
 // Create another Intersection Observer to load and unload images/videos as they scroll into and out of view
 const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -66,9 +43,37 @@ const imageObserver = new IntersectionObserver(entries => {
         }
     });
 }, {
-    root: gallery,
+    root: null,
     rootMargin: '200px'  // Load/unload images/videos when they're within 200px of the visible area
 });
+
+function loadNextPage() {
+    if (currentPage < totalPages) {
+        axios.get(`/media/page/${currentPage}/${orderBy}/${orderAsc}/${orderByIncludeVideos}`)
+            .then(response => {
+                let addedItems = [];
+                response.data.ids.forEach(id => {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'gallery-item-container';
+                    placeholder.dataset.id = id;
+                    gallery.appendChild(placeholder);
+                    imageObserver.observe(placeholder);
+                    addedItems.push(placeholder);
+                    placeholder.onclick = () => {
+                        showFullSizeImage(placeholder);
+                    };
+                });
+                currentPage++;
+
+                // Observe the last image placeholder to trigger the pageObserver
+                // get the 10th item from the end of the array, or if there are less than 10 items, get the first one
+                const lastPlaceholder = addedItems[addedItems.length - 10] || addedItems[0];
+                if (lastPlaceholder) {
+                    pageObserver.observe(lastPlaceholder);
+                }
+            });
+    }
+}
 
 function loadImage(placeholder) {
     if (placeholder.querySelector('img')) {
@@ -83,6 +88,13 @@ function loadImage(placeholder) {
         img.onclick = () => {
             showFullSizeImage(placeholder);
         };
+
+        axios.get(`/media/get/${id}/type`)
+            .then(response => {
+                if (response.data.type === 'vid') {
+                    placeholder.classList.add('video');
+                }
+            });
     };
     img.onerror = (error) => {
         console.error(`Error loading image with ID ${id}:`, error);
@@ -102,6 +114,20 @@ function unloadImage(placeholder) {
     }
 }
 
+function softReloadPage() {
+    currentPage = 0;
+    totalPages = 0;
+    while (gallery.firstChild) {
+        gallery.removeChild(gallery.firstChild);
+    }
+    axios.get('/media/page/count/' + orderByIncludeVideos)
+        .then(response => {
+            totalPages = response.data.total;
+            console.log(`Total pages: ${totalPages}`);
+            loadNextPage();
+        });
+}
+
 function showFullSizeImage(placeholder) {
     if (!fullsizeContainer.classList.contains('open')) {
         while (fullsizeImage.firstChild) {
@@ -110,25 +136,50 @@ function showFullSizeImage(placeholder) {
     }
 
     const id = placeholder.dataset.id;
-    const img = document.createElement('img');
 
-    img.src = `/media/get/${id}/full`;
-    img.onload = () => {
-        fullsizeImage.appendChild(img);
-        while (fullsizeImage.firstChild !== img) {
-            fullsizeImage.removeChild(fullsizeImage.firstChild);
-        }
-        fullsizeImage.classList.add('loaded');
-        currentlyActiveFullscreenImageId = id;
-    };
-    img.onerror = (error) => {
-        console.error(`Error loading image with ID ${id}:`, error);
-        fullsizeImage.removeChild(img);
-        fullsizeContainer.classList.remove('open');
-        fullsizeImage.classList.remove('loaded');
-        currentlyActiveFullscreenImageId = null;
-    };
-    fullsizeContainer.classList.add('open');
+    if (placeholder.classList.contains('video')) {
+        const video = document.createElement('video');
+        video.src = `/media/get/${id}/full`;
+        video.controls = true;
+        video.autoplay = true;
+        video.onloadedmetadata = () => {
+            fullsizeImage.appendChild(video);
+            while (fullsizeImage.firstChild !== video) {
+                fullsizeImage.removeChild(fullsizeImage.firstChild);
+            }
+            fullsizeImage.classList.add('loaded');
+            currentlyActiveFullscreenImageId = id;
+        };
+        video.onerror = (error) => {
+            console.error(`Error loading video with ID ${id}:`, error);
+            fullsizeImage.removeChild(video);
+            fullsizeContainer.classList.remove('open');
+            fullsizeImage.classList.remove('loaded');
+            currentlyActiveFullscreenImageId = null;
+        };
+        fullsizeContainer.classList.add('open');
+
+    } else {
+        const img = document.createElement('img');
+
+        img.src = `/media/get/${id}/full`;
+        img.onload = () => {
+            fullsizeImage.appendChild(img);
+            while (fullsizeImage.firstChild !== img) {
+                fullsizeImage.removeChild(fullsizeImage.firstChild);
+            }
+            fullsizeImage.classList.add('loaded');
+            currentlyActiveFullscreenImageId = id;
+        };
+        img.onerror = (error) => {
+            console.error(`Error loading image with ID ${id}:`, error);
+            fullsizeImage.removeChild(img);
+            fullsizeContainer.classList.remove('open');
+            fullsizeImage.classList.remove('loaded');
+            currentlyActiveFullscreenImageId = null;
+        };
+        fullsizeContainer.classList.add('open');
+    }
 }
 
 function hideFullSizeImage() {
@@ -140,18 +191,31 @@ function hideFullSizeImage() {
     currentlyActiveFullscreenImageId = null;
 }
 
+function getNextFullSizeImageId() {
+    return document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
+}
+
 function nextFullSizeImage() {
-    const nextImage = document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
+    const nextImage = getNextFullSizeImageId();
+    console.log(nextImage)
     if (nextImage) {
+        nextImage.scrollIntoView();
         showFullSizeImage(nextImage);
     } else {
+        console.log('loading next page to find next image')
         loadNextPage();
     }
 }
 
+function getPreviousFullSizeImageId() {
+    return document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).previousSibling;
+}
+
 function previousFullSizeImage() {
-    const previousImage = document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).previousSibling;
+    const previousImage = getPreviousFullSizeImageId();
+    console.log(previousImage)
     if (previousImage) {
+        previousImage.scrollIntoView();
         showFullSizeImage(previousImage);
     }
 }
@@ -225,6 +289,21 @@ function handleTouchMove(evt) {
     yDown = null;
 }
 
+function disableWebpage() {
+    enableWebpage();
+    const disableWebpage = document.createElement('div');
+    disableWebpage.classList.add('disable-webpage');
+    disableWebpage.onclick = () => false;
+    document.body.appendChild(disableWebpage);
+}
+
+function enableWebpage() {
+    const disableWebpage = document.querySelector('.disable-webpage');
+    if (disableWebpage) {
+        document.body.removeChild(disableWebpage);
+    }
+}
+
 function openSettingsModal() {
     const myModal = new bootstrap.Modal(document.getElementById('settingsModal'), {});
     myModal.show();
@@ -236,9 +315,121 @@ function hideSettingsModal() {
     myModal.hide();
 }
 
+// {"settings":{"image_directories":["D:\\files\\media\\images\\screenshots\\nintendo_switch","D:\\files\\media\\images\\screenshots\\games"],"index_on_startup":false}}
 function populateSettingsModalData() {
     axios.get('/settings/get')
         .then(response => {
-            const settings = response.settings;
+            const settings = response.data.settings;
+            console.log(settings);
+            const imageDirectories = settings.image_directories;
+            const disabledImageDirectories = settings.disabled_image_directories;
+            const indexOnStartup = settings.index_on_startup;
+
+            const table = document.getElementById('settings-table');
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+
+            imageDirectories.forEach((directory, index) => {
+                const row = tbody.insertRow();
+                const pathCell = row.insertCell();
+                const optionsCell = row.insertCell();
+
+                const isDisabled = disabledImageDirectories.includes(directory);
+
+                pathCell.classList.add('code');
+
+                pathCell.innerText = directory;
+                optionsCell.innerHTML = `
+                    <button type="button" class="btn btn-danger" title="Delete" onclick="removeImageDirectory('${directory.replaceAll('\\', '\\\\')}')">🗑️</button>
+                    <button type="button" class="btn btn-primary" title="Rescan" onclick="rescanImageDirectory('${directory.replaceAll('\\', '\\\\')}')">🔄</button>
+                    <button type="button" class="btn btn-primary" title="${isDisabled ? 'Enable' : 'Disable'}" onclick="setImageDirectoryActive('${directory.replaceAll('\\', '\\\\')}', ${isDisabled})">${isDisabled ? '❌' : '✔️'}</button>
+                `;
+            });
+
+            const reindexOnStartup = document.getElementById('reindex-on-startup');
+            reindexOnStartup.checked = indexOnStartup;
         });
+}
+
+function rescanImageDirectory(path) {
+    disableWebpage();
+    axios.post('/settings/path/rescan', {path})
+        .then(response => {
+            console.log(response);
+            populateSettingsModalData();
+            softReloadPage();
+        })
+        .finally(() => {
+            enableWebpage();
+        });
+}
+
+function removeImageDirectory(path) {
+    disableWebpage();
+    axios.post('/settings/path/remove', {path})
+        .then(response => {
+            console.log(response);
+            populateSettingsModalData();
+            softReloadPage();
+        })
+        .finally(() => {
+            enableWebpage();
+        });
+}
+
+function setImageDirectoryActive(path, active) {
+    disableWebpage();
+    let enabled = active ? 'enable' : 'disable';
+    axios.post('/settings/path/' + enabled, {path})
+        .then(response => {
+            console.log(response);
+            populateSettingsModalData();
+            softReloadPage();
+        })
+        .finally(() => {
+            enableWebpage();
+        });
+}
+
+function addImagePath() {
+    const path = prompt('Enter the path to the image directory');
+    if (path) {
+        disableWebpage();
+        axios.post('/settings/path/add', {path})
+            .then(response => {
+                console.log(response);
+                populateSettingsModalData();
+                softReloadPage();
+            })
+            .finally(() => {
+                enableWebpage();
+            });
+    }
+}
+
+function setReindexOnStartup(checked) {
+    disableWebpage();
+    axios.post('/settings/reindex-on-startup', {checked})
+        .then(response => {
+            console.log(response);
+            populateSettingsModalData();
+        })
+        .finally(() => {
+            enableWebpage();
+        });
+}
+
+function setOrderBy(selection) {
+    orderBy = selection;
+    softReloadPage();
+}
+
+function setOrderByDirection(checked) {
+    orderAsc = checked;
+    softReloadPage();
+}
+
+function setOrderByIncludeVideos(checked) {
+    orderByIncludeVideos = checked;
+    softReloadPage();
 }

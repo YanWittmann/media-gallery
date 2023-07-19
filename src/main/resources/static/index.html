@@ -17,7 +17,7 @@
 <body>
 
 <!-- bootstrap header with application name, link to github and settings button -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+<nav class="navbar navbar-expand-lg navbar-light bg-light absolute-top">
     <div class="container-fluid">
         <span class="navbar-brand">Media Gallery</span>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +46,10 @@
 </div>
 
 <!-- settings modal contains a table of two columns that are being filled later, but the table must be there.
-     then there is an "Add image path" button. -->
+     then there is an "Add image path" button.
+     and a checkbox to enable/disable the re-indexing on startup.
+     and an "order by" drop down menu with the options "date", "name"
+     -->
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
@@ -66,7 +69,20 @@
                     <tbody>
                     </tbody>
                 </table>
-                <button type="button" class="btn btn-primary" onclick="addImagePath()">Add image path</button>
+                <button type="button" class="btn btn-primary" onclick="addImagePath()">Add media path</button>
+                <br><br>
+                <label for="order-by">Order</label>
+                <select id="order-by" class="form-select" onchange="setOrderBy(this.value)">
+                    <option value="date">Date</option>
+                    <option value="name">Name</option>
+                </select>
+                <input type="checkbox" class="form-check-input" id="order-by-direction" onclick="setOrderByDirection(this.checked)">
+                <label class="form-check-label" for="order-by-direction">Invert sorting order</label><br>
+                <input type="checkbox" class="form-check-input" id="order-by-videos" onclick="setOrderByIncludeVideos(this.checked)">
+                <label class="form-check-label" for="order-by-videos">Include videos</label>
+                <br><br>
+                <input type="checkbox" class="form-check-input" id="reindex-on-startup" onclick="setReindexOnStartup(this.checked)">
+                <label class="form-check-label" for="reindex-on-startup">Re-Index all on startup</label>
             </div>
         </div>
     </div>

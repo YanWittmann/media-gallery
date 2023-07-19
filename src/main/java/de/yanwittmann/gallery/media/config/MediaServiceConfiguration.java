@@ -9,10 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class MediaServiceConfiguration {
 
@@ -50,6 +47,15 @@ public class MediaServiceConfiguration {
             return config.get(field);
         } else {
             return field.getDefaultValue();
+        }
+    }
+
+    public List<String> getStringList(ConfigField field) {
+        final Object value = get(field);
+        if (value instanceof List) {
+            return (List<String>) value;
+        } else {
+            return new ArrayList<>();
         }
     }
 

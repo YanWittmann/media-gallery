@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public enum ConfigField {
     IMAGE_DIRECTORIES("image_directories", new ArrayList<>(), ConfigConverters.LIST_TO_CONFIG_CONVERTER, ConfigConverters.STRING_LIST_FROM_CONFIG_CONVERTER),
+    DISABLED_IMAGE_DIRECTORIES("disabled_image_directories", new ArrayList<>(), ConfigConverters.LIST_TO_CONFIG_CONVERTER, ConfigConverters.STRING_LIST_FROM_CONFIG_CONVERTER),
     INDEX_ON_STARTUP("index_on_startup", true, ConfigConverters.IDENTITY_TO_CONFIG_CONVERTER, ConfigConverters.IDENTITY_FROM_CONFIG_CONVERTER),
     ;
 

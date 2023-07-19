@@ -1,3 +1,7 @@
+:root {
+    --color-video: #ff3000;
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -18,6 +22,26 @@ html, body {
     margin: 2px;
     box-sizing: border-box;
     display: flex;
+}
+
+/* add a small triangle to the bottom right corner of the image */
+.gallery-item-container.video {
+    position: relative;
+    border-bottom: 3px solid var(--color-video);
+    border-radius: 0 0 4px 4px;
+}
+
+.gallery-item-container.video::after {
+    content: "";
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 25px 25px;
+    border-color: transparent transparent var(--color-video) transparent;
+    transform: rotate(-45deg);
 }
 
 .gallery-item-container img {
@@ -60,7 +84,7 @@ It is hidden by default, unless it has the class 'open'.
     transition: opacity 0.2s ease-in-out;
 }
 
-.fullsize-image img {
+.fullsize-image img, .fullsize-image video {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -104,4 +128,24 @@ It is hidden by default, unless it has the class 'open'.
 
 .fullsize-nav.fullsize-next {
     right: 30px;
+}
+
+.code {
+    font-family: 'Roboto Mono', monospace;
+    background-color: #eee;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.disable-webpage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3000;
+    background-color: rgba(255, 255, 255, 0.3);
 }

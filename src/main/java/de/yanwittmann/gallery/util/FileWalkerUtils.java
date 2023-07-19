@@ -60,15 +60,5 @@ public class FileWalkerUtils {
             return extensionList.stream().anyMatch(fileName::endsWith);
         };
     }
-
-    public static void main(String[] args) {
-        FileWalkerUtils.walkFileTreeMultiThreaded(
-                Paths.get("D:\\files\\media\\images\\screenshots\\nintendo_switch"),
-                FileWalkerUtils.extensionFilter("jpg", "png", "mov", "mp4"),
-                path -> true,
-                file -> System.out.println("Processing file: " + file.toAbsolutePath()),
-                10
-        );
-    }
 }
 

@@ -148,7 +148,6 @@ function showFullSizeImage(placeholder) {
                 fullsizeImage.removeChild(fullsizeImage.firstChild);
             }
             fullsizeImage.classList.add('loaded');
-            currentlyActiveFullscreenImageId = id;
         };
         video.onerror = (error) => {
             console.error(`Error loading video with ID ${id}:`, error);
@@ -169,7 +168,6 @@ function showFullSizeImage(placeholder) {
                 fullsizeImage.removeChild(fullsizeImage.firstChild);
             }
             fullsizeImage.classList.add('loaded');
-            currentlyActiveFullscreenImageId = id;
         };
         img.onerror = (error) => {
             console.error(`Error loading image with ID ${id}:`, error);
@@ -180,6 +178,8 @@ function showFullSizeImage(placeholder) {
         };
         fullsizeContainer.classList.add('open');
     }
+
+    currentlyActiveFullscreenImageId = id;
 }
 
 function hideFullSizeImage() {
@@ -348,6 +348,9 @@ function populateSettingsModalData() {
 
             const reindexOnStartup = document.getElementById('reindex-on-startup');
             reindexOnStartup.checked = indexOnStartup;
+
+            document.getElementById('order-by-direction').checked = orderAsc;
+            document.getElementById('order-by-videos').checked = orderByIncludeVideos;
         });
 }
 

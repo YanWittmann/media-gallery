@@ -191,15 +191,26 @@ function hideFullSizeImage() {
     currentlyActiveFullscreenImageId = null;
 }
 
+function openInEnclosingFolder(id) {
+    axios.get(`/system/show-in-folder/${id}`)
+        .then(response => {
+            console.log(response);
+        });
+}
+
 function getNextFullSizeImageId() {
     return document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
 }
 
 function nextFullSizeImage() {
     const nextImage = getNextFullSizeImageId();
-    console.log(nextImage)
     if (nextImage) {
         nextImage.scrollIntoView();
+        try {
+            tryToPreloadImage(`/media/get/${nextImage.nextSibling.dataset.id}/full`);
+        } catch (e) {
+            console.log(e);
+        }
         showFullSizeImage(nextImage);
     } else {
         console.log('loading next page to find next image')
@@ -213,16 +224,24 @@ function getPreviousFullSizeImageId() {
 
 function previousFullSizeImage() {
     const previousImage = getPreviousFullSizeImageId();
-    console.log(previousImage)
     if (previousImage) {
         previousImage.scrollIntoView();
+        try {
+            tryToPreloadImage(`/media/get/${previousImage.previousSibling.dataset.id}/full`);
+        } catch (e) {
+            console.log(e);
+        }
         showFullSizeImage(previousImage);
     }
 }
 
 fullsizeContainer.onclick = e => {
     if (e.target !== fullsizePrev && e.target !== fullsizeNext) {
-        hideFullSizeImage();
+        if (e.detail === 2) { // check for double click
+            openInEnclosingFolder(currentlyActiveFullscreenImageId);
+        } else if (e.button === 0) { // left click
+            hideFullSizeImage();
+        }
     }
 }
 fullsizePrev.onclick = () => {
@@ -435,4 +454,18 @@ function setOrderByDirection(checked) {
 function setOrderByIncludeVideos(checked) {
     orderByIncludeVideos = checked;
     softReloadPage();
+}
+
+function tryToPreloadImage(src) {
+    try {
+        const image = new Image();
+        image.src = src;
+        image.style = "position: fixed; top: -600px; left: 0; width: 500px; height: 500px;"
+        document.body.appendChild(image);
+        setTimeout(() => {
+            document.body.removeChild(image);
+        }, 2000);
+    } catch (e) {
+        console.error(e);
+    }
 }

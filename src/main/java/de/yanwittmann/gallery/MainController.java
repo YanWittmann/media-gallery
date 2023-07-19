@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -78,6 +79,20 @@ public class MainController {
         return new JSONObject()
                 .put("type", file == null ? "unknown" : file.getName().endsWith(".mp4") ? "vid" : "img")
                 .toString();
+    }
+
+    @GetMapping("/system/show-in-folder/{id}")
+    public String getShowInEnclosingFolder(@PathVariable long id) {
+        final File file = mediaService.getMediaFile(id);
+        if (file == null) return new JSONObject().put("success", false).put("message", "File not found").toString();
+
+        try {
+            Desktop.getDesktop().open(file.getParentFile());
+        } catch (IOException e) {
+            return new JSONObject().put("success", false).put("message", "Failed to open folder: " + e.getMessage()).toString();
+        }
+
+        return new JSONObject().put("success", true).toString();
     }
 
     @GetMapping("/settings/get")

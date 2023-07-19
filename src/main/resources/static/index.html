@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Media Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
     <script defer src="js/main.js"></script>
     <link rel="stylesheet" type="text/css" href="css/main.css">
 </head>
 <body>
 <div id="gallery" data-columns></div>
+<div id="fullsize-container" class="fullsize-container">
+    <div id="fullsize-prev" class="fullsize-prev fullsize-nav">←</div>
+    <div id="fullsize-next" class="fullsize-next fullsize-nav">→</div>
+    <div id="fullsize-image" class="fullsize-image"></div>
+</div>
 </body>
 </html>

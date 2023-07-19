@@ -172,4 +172,8 @@ public class MediaService {
             throw new RuntimeException("Failed to get media file for id [" + id + "]: " + e.getMessage(), e);
         }
     }
+
+    public MediaServiceConfiguration getSettings() {
+        return configuration;
+    }
 }

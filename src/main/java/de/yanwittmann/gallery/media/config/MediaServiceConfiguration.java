@@ -68,10 +68,7 @@ public class MediaServiceConfiguration {
     }
 
     private void saveToFileNow() {
-        final JSONObject config = new JSONObject();
-        for (Map.Entry<ConfigField, Object> entry : this.config.entrySet()) {
-            config.put(entry.getKey().getKey(), entry.getKey().getToConfigConverter().convert(entry.getValue()));
-        }
+        final JSONObject config = toJson();
 
         final String configJson = config.toString();
         try {
@@ -80,6 +77,14 @@ public class MediaServiceConfiguration {
         } catch (IOException e) {
             LOG.error("Failed to save configuration to file: " + configFile, e);
         }
+    }
+
+    public JSONObject toJson() {
+        final JSONObject config = new JSONObject();
+        for (Map.Entry<ConfigField, Object> entry : this.config.entrySet()) {
+            config.put(entry.getKey().getKey(), entry.getKey().getToConfigConverter().convert(entry.getValue()));
+        }
+        return config;
     }
 
     public static MediaServiceConfiguration fromConfigFile(File file) throws IOException {

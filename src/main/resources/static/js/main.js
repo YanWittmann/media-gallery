@@ -37,7 +37,7 @@ function loadNextPage() {
                 let lastPlaceholder;
                 response.data.ids.forEach(id => {
                     const placeholder = document.createElement('div');
-                    placeholder.className = 'placeholder';
+                    placeholder.className = 'gallery-item-container';
                     placeholder.dataset.id = id;
                     gallery.appendChild(placeholder);
                     imageObserver.observe(placeholder);
@@ -141,7 +141,7 @@ function hideFullSizeImage() {
 }
 
 function nextFullSizeImage() {
-    const nextImage = document.querySelector(`.placeholder[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
+    const nextImage = document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
     if (nextImage) {
         showFullSizeImage(nextImage);
     } else {
@@ -150,7 +150,7 @@ function nextFullSizeImage() {
 }
 
 function previousFullSizeImage() {
-    const previousImage = document.querySelector(`.placeholder[data-id="${currentlyActiveFullscreenImageId}"]`).previousSibling;
+    const previousImage = document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).previousSibling;
     if (previousImage) {
         showFullSizeImage(previousImage);
     }
@@ -223,4 +223,22 @@ function handleTouchMove(evt) {
     /* reset values */
     xDown = null;
     yDown = null;
+}
+
+function openSettingsModal() {
+    const myModal = new bootstrap.Modal(document.getElementById('settingsModal'), {});
+    myModal.show();
+    populateSettingsModalData();
+}
+
+function hideSettingsModal() {
+    const myModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+    myModal.hide();
+}
+
+function populateSettingsModalData() {
+    axios.get('/settings/get')
+        .then(response => {
+            const settings = response.settings;
+        });
 }

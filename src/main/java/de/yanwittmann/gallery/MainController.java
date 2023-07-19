@@ -73,6 +73,13 @@ public class MainController {
         return buildResponseEntityForFile(thumbnailFile);
     }
 
+    @GetMapping("/settings/get")
+    public String getMediaThumb() {
+        return new JSONObject()
+                .put("settings", mediaService.getSettings().toJson())
+                .toString();
+    }
+
     private ResponseEntity<Resource> buildResponseEntityForFile(File file) throws IOException {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + file.getName());

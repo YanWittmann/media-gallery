@@ -3,7 +3,6 @@ html, body {
     padding: 0;
     height: 100%;
     font-family: 'Roboto', sans-serif;
-    overflow-y: hidden;
 }
 
 #gallery {
@@ -11,11 +10,9 @@ html, body {
     flex-wrap: wrap;
     justify-content: space-around;
     padding: 10px;
-    height: 95%;
-    overflow-y: scroll;
 }
 
-.placeholder {
+.gallery-item-container {
     flex: 1 0 350px;
     background-color: #eee;
     margin: 2px;
@@ -23,7 +20,7 @@ html, body {
     display: flex;
 }
 
-.placeholder img {
+.gallery-item-container img {
     display: block;
     width: 100%;
     height: auto;

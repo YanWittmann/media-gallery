@@ -4,10 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 public abstract class JdbcRow {
@@ -29,6 +26,9 @@ public abstract class JdbcRow {
                 field.setAccessible(true);
 
                 try {
+                    if (!hasColumn(resultSet, column.name())) {
+                        continue;
+                    }
                     final Object result = resultSet.getObject(column.name());
                     final Object mapped = column.resultSetToField().getMapper().apply(result);
 
@@ -38,6 +38,17 @@ public abstract class JdbcRow {
                 }
             }
         }
+    }
+
+    public static boolean hasColumn(ResultSet rs, String columnName) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int columns = rsmd.getColumnCount();
+        for (int x = 1; x <= columns; x++) {
+            if (columnName.equals(rsmd.getColumnName(x))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public abstract String getTableName();

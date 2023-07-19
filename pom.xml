@@ -19,6 +19,7 @@
         <gallery.file.base>res</gallery.file.base>
         <gallery.file.config>config.json</gallery.file.config>
         <gallery.file.db>db/db.sqlite</gallery.file.db>
+        <gallery.file.thumb>thumbs</gallery.file.thumb>
     </properties>
 
     <dependencies>
@@ -105,6 +106,9 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>**/*.sql</include>
+                    <include>**/*.html</include>
+                    <include>**/*.js</include>
+                    <include>**/*.css</include>
                 </includes>
                 <filtering>false</filtering>
             </resource>

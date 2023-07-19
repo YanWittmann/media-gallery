@@ -40,4 +40,8 @@ public class MediaGalleryConfig {
         return new File(properties.getProperty("gallery.file.db"));
     }
 
+    public static File getThumbsDir() {
+        return new File(properties.getProperty("gallery.file.thumb"));
+    }
+
 }

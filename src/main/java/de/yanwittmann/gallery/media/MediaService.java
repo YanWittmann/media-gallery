@@ -15,10 +15,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MediaService {
 
     public static final Logger LOG = LoggerFactory.getLogger(MediaService.class);
+
+    private final int PAGINATION_ENTRIES_PER_PAGE = 60;
 
     private final MediaServiceConfiguration configuration;
     private final MediaTable mediaTable;
@@ -135,5 +138,38 @@ public class MediaService {
             h = 31 * h + string.charAt(i);
         }
         return h;
+    }
+
+    public List<Long> getMediaIds(int page) throws SQLException {
+        return this.mediaTable.getByPreparedStatement(connection -> {
+                    try {
+                        final PreparedStatement statement = connection.prepareStatement("SELECT id FROM " + mediaTable.getTableName() + " ORDER BY last_edited DESC LIMIT ? OFFSET ?");
+                        statement.setInt(1, PAGINATION_ENTRIES_PER_PAGE);
+                        statement.setInt(2, page * PAGINATION_ENTRIES_PER_PAGE);
+                        return statement;
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).stream()
+                .map(MediaRow::getId)
+                .collect(Collectors.toList());
+    }
+
+    public int getTotalCount() {
+        return this.mediaTable.count();
+    }
+
+    public int getPageCount() {
+        return (int) Math.ceil((double) getTotalCount() / PAGINATION_ENTRIES_PER_PAGE);
+    }
+
+    public File getMediaFile(long id) {
+        try {
+            return this.mediaTable.getByPrimaryKey(id)
+                    .map(MediaRow::getFile)
+                    .orElse(null);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get media file for id [" + id + "]: " + e.getMessage(), e);
+        }
     }
 }

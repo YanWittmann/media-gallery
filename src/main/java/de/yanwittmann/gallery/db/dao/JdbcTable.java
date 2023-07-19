@@ -155,4 +155,21 @@ public abstract class JdbcTable<ROW extends JdbcRow, PK> {
             throw new SQLException("Error whilst deleting data from table: " + e.getMessage(), e);
         }
     }
+
+    public int count() {
+        try (Connection connection = DatabaseHandler.getConnectionProvider().connection()) {
+
+            final PreparedStatement statement = connection.prepareStatement(String.format("SELECT COUNT(*) FROM %s", getTableName()));
+            final ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            } else {
+                return 0;
+            }
+
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 }

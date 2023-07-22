@@ -69,19 +69,23 @@
                             <div class="row form-group mt-1 align-items-center">
                                 <div class="col-sm-3 col-form-label text-sm-end">Invert sorting order</div>
                                 <div class="col-sm-9">
-                                    <input type="checkbox" class="form-check-input" id="order-by-direction" onclick="setOrderByDirection(this.checked)">
+                                    <input type="checkbox" class="form-check-input" id="order-by-direction"
+                                           onclick="setOrderByDirection(this.checked)">
                                 </div>
                             </div>
                             <div class="row form-group mt-1 align-items-center">
                                 <div class="col-sm-3 col-form-label text-sm-end">Include videos</div>
                                 <div class="col-sm-9">
-                                    <input type="checkbox" class="form-check-input" id="order-by-videos" onclick="setOrderByIncludeVideos(this.checked)">
+                                    <input type="checkbox" class="form-check-input" id="order-by-videos"
+                                           onclick="setOrderByIncludeVideos(this.checked)">
                                 </div>
                             </div>
                             <div class="row form-group mt-1 align-items-center">
-                                <label for="thumbnail-size" class="col-sm-3 col-form-label text-sm-end">Thumbnail size</label>
+                                <label for="thumbnail-size" class="col-sm-3 col-form-label text-sm-end">Thumbnail
+                                    size</label>
                                 <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="thumbnail-size" onchange="setThumbnailSize(this.value)">
+                                    <input type="text" class="form-control" id="thumbnail-size"
+                                           onchange="setThumbnailSize(this.value)">
                                 </div>
                             </div>
                         </div>
@@ -100,9 +104,12 @@
                                 <tbody>
                                 </tbody>
                             </table>
-                            <button type="button" class="btn btn-primary mt-2 mb-3" onclick="addImagePath()">Add media path</button>
+                            <button type="button" class="btn btn-primary mt-2 mb-3" onclick="addImagePath()">Add media
+                                path
+                            </button>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="reindex-on-startup" onclick="setReindexOnStartup(this.checked)">
+                                <input type="checkbox" class="form-check-input" id="reindex-on-startup"
+                                       onclick="setReindexOnStartup(this.checked)">
                                 <label class="form-check-label" for="reindex-on-startup">Re-Index all on startup</label>
                             </div>
                         </div>
@@ -111,7 +118,8 @@
                     <div class="row">
                         <div class="col-12">
                             <h5>Application</h5>
-                            <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application" onclick="sendApplicationShutdown()">Clean up and shutdown</button>
+                            <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application"
+                                    onclick="sendApplicationShutdown()">Clean up and shutdown</button>
                         </div>
                     </div>
                 </div>

@@ -6,8 +6,8 @@ const fullsizeContainer = document.getElementById('fullsize-container');
 const fullsizePrev = document.getElementById('fullsize-prev');
 const fullsizeNext = document.getElementById('fullsize-next');
 
-let currentPage = 0;
 let totalPages = 0;
+let pagesToBeLoaded = [];
 
 let currentlyActiveFullscreenImageId = null;
 
@@ -16,19 +16,14 @@ let orderAsc = false;
 let orderByIncludeVideos = false;
 let thumbnailSize = DEFAULT_THUMBNAIL_SIZE;
 
-axios.get('/media/page/count/' + orderByIncludeVideos)
-    .then(response => {
-        totalPages = response.data.total;
-        console.log(`Total pages: ${totalPages}`);
-        loadNextPage();
-    });
+softReloadPage();
 
 // Intersection Observer to load the next page when the user scrolls to the bottom
 const pageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             pageObserver.unobserve(entry.target);
-            loadNextPage();
+            loadPage(parseInt(entry.target.dataset.loadPageIndex));
         }
     });
 });
@@ -47,33 +42,145 @@ const imageObserver = new IntersectionObserver(entries => {
     rootMargin: '400px'  // load/unload images/videos when they're within a radius of the visible area
 });
 
-function loadNextPage() {
-    if (currentPage < totalPages) {
-        axios.get(`/media/page/${currentPage}/${orderBy}/${orderAsc}/${orderByIncludeVideos}`)
-            .then(response => {
-                let addedItems = [];
-                response.data.ids.forEach(id => {
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'gallery-item-container';
-                    placeholder.dataset.id = id;
-                    gallery.appendChild(placeholder);
-                    imageObserver.observe(placeholder);
-                    addedItems.push(placeholder);
-                    placeholder.onclick = () => {
-                        showFullSizeImage(placeholder);
-                    };
-                });
-                currentPage++;
+function loadPage(page, scrollIntoView = false) {
+    const isLargerThanTotalPages = page >= totalPages;
+    const isNotToBeLoaded = !pagesToBeLoaded.includes(page);
 
-                // Observe the last image placeholder to trigger the pageObserver
-                // get the 10th item from the end of the array, or if there are less than 10 items, get the first one
-                const lastPlaceholder = addedItems[addedItems.length - 10] || addedItems[0];
-                if (lastPlaceholder) {
-                    pageObserver.observe(lastPlaceholder);
+    if (isLargerThanTotalPages || isNotToBeLoaded) {
+        console.log(`Skipping loading page ${page}...`, isLargerThanTotalPages, isNotToBeLoaded)
+        return;
+    }
+    console.log(`Loading page ${page}...`)
+
+    axios.get(`/media/page/${page}/${orderBy}/${orderAsc}/${orderByIncludeVideos}`)
+        .then(response => {
+            // find where to insert the new items by finding the last element with the page number 1 less than the current page
+            let insertAfter = null;
+            const galleryItemContainers = document.querySelectorAll('.gallery-item-container');
+            const galleryItemContainersArray = Array.from(galleryItemContainers);
+
+            let pageNumbers = galleryItemContainersArray.map(container => parseInt(container.dataset.page));
+            let filteredPageNumbers = pageNumbers.filter(pageNumber => pageNumber < page);
+            let maxPageLessThanCurrent = Math.max(...filteredPageNumbers);
+
+            galleryItemContainersArray.forEach(container => {
+                if (parseInt(container.dataset.page) === maxPageLessThanCurrent) {
+                    insertAfter = container;
                 }
             });
-    }
+
+            const elementAtCenterOfScreen = getElementAtCenterOfScreen();
+            const currentlyViewedPage = getPageOfElement(elementAtCenterOfScreen);
+            const isCurrentlyViewedPageAfter = currentlyViewedPage > page;
+            const scrollHeightOfElementAtCenterOfScreen = getDistanceFromTop(elementAtCenterOfScreen, gallery);
+
+
+            insertAfter = insertAfter || galleryItemContainers[galleryItemContainers.length - 1] || null;
+
+            let addedItems = [];
+            response.data.ids.forEach(id => {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'gallery-item-container';
+                placeholder.dataset.id = id;
+                placeholder.dataset.page = page;
+                placeholder.style.height = `${Math.round(thumbnailSize / 1.7)}px`;
+                imageObserver.observe(placeholder);
+                addedItems.push(placeholder);
+                placeholder.onclick = () => {
+                    showFullSizeImage(placeholder);
+                };
+
+                // Insert the placeholder after the insertAfter item
+                if (insertAfter === null) {
+                    gallery.appendChild(placeholder);
+                } else {
+                    insertAfterElement(insertAfter, placeholder);
+                }
+                insertAfter = placeholder;
+            });
+            pagesToBeLoaded = pagesToBeLoaded.filter(p => p !== page);
+
+            if (isCurrentlyViewedPageAfter && elementAtCenterOfScreen) {
+                const scrollHeightOfElementAtCenterOfScreenAfterAddingElements = getDistanceFromTop(elementAtCenterOfScreen, gallery);
+                const scrollDifference = scrollHeightOfElementAtCenterOfScreenAfterAddingElements - scrollHeightOfElementAtCenterOfScreen;
+                console.log("readjusting scroll position to", elementAtCenterOfScreen, scrollHeightOfElementAtCenterOfScreenAfterAddingElements, scrollHeightOfElementAtCenterOfScreen, scrollDifference)
+                window.scrollBy(0, scrollDifference);
+                elementAtCenterOfScreen.scrollIntoView();
+            }
+
+            // Observe the last image placeholder to trigger the pageObserver
+            // get the 10th item from the end of the array, or if there are less than 10 items, get the first one
+            const lastPlaceholder = addedItems[addedItems.length - 10] || addedItems[0];
+            if (lastPlaceholder) {
+                lastPlaceholder.dataset.loadPageIndex = "" + (page + 1);
+                pageObserver.observe(lastPlaceholder);
+            }
+            // then observe the first image placeholder to trigger the pageObserver
+            const firstPlaceholder = addedItems[0];
+            if (firstPlaceholder) {
+                firstPlaceholder.dataset.loadPageIndex = "" + (page - 1);
+                pageObserver.observe(firstPlaceholder);
+            }
+
+            if (scrollIntoView) {
+                const scrollTo = findLastElement(addedItems);
+                if (scrollTo) {
+                    loadPage(page - 1, false);
+                    console.log("scrolling to page", scrollTo);
+                    loadImage(scrollTo)
+                    for (let i = 100; i < 4000; i++) {
+                        setTimeout(() => {
+                            scrollTo.scrollIntoView();
+                        }, i);
+                    }
+                }
+            }
+        });
 }
+
+function getPageOfElement(element) {
+    if (element) {
+        return parseInt(element.dataset.page);
+    }
+    return 0;
+}
+
+function getElementAtCenterOfScreen() {
+    const galleryItemContainers = document.querySelectorAll('.gallery-item-container');
+    const containersWithImg = Array.from(galleryItemContainers).filter(container => container.querySelector('img'));
+
+    if (containersWithImg.length > 0) {
+        const middleIndex = Math.floor(containersWithImg.length / 2);
+        return containersWithImg[middleIndex];
+    }
+    return null;
+}
+
+function getDistanceFromTop(element, scrollParent) {
+    if (element === null) {
+        return 0;
+    }
+    return element.offsetTop - scrollParent.scrollTop;
+}
+
+function findFirstElement(elements) {
+    return elements.reduce((first, current) => {
+        // compareDocumentPosition returns 4 if first is following current
+        return first.compareDocumentPosition(current) & Node.DOCUMENT_POSITION_FOLLOWING ? current : first;
+    });
+}
+
+function findLastElement(elements) {
+    return elements.reduce((last, current) => {
+        // compareDocumentPosition returns 2 if first is preceding current
+        return last.compareDocumentPosition(current) & Node.DOCUMENT_POSITION_PRECEDING ? current : last;
+    });
+}
+
+function insertAfterElement(existingNode, newNode) {
+    existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
+}
+
 
 function loadImage(placeholder) {
     if (placeholder.querySelector('img')) {
@@ -115,7 +222,7 @@ function unloadImage(placeholder) {
 }
 
 function softReloadPage() {
-    currentPage = 0;
+    pagesToBeLoaded = [];
     totalPages = 0;
     while (gallery.firstChild) {
         pageObserver.unobserve(gallery.firstChild)
@@ -124,9 +231,10 @@ function softReloadPage() {
     }
     axios.get('/media/page/count/' + orderByIncludeVideos)
         .then(response => {
-            totalPages = response.data.total;
+            totalPages = parseInt(response.data.total);
+            pagesToBeLoaded = Array.from({length: totalPages}, (_, i) => i);
             console.log(`Total pages: ${totalPages}`);
-            loadNextPage();
+            loadPage(0);
         });
 }
 
@@ -212,8 +320,8 @@ function nextFullSizeImage() {
         }
         showFullSizeImage(nextImage);
     } else {
-        console.log('loading next page to find next image')
-        loadNextPage();
+        //console.log('loading next page to find next image')
+        //loadPage();
     }
 }
 

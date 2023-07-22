@@ -18,6 +18,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light absolute-top">
     <div class="container-fluid">
+        <img src="img/logo.png" alt="Logo" class="navbar-brand-logo" style="height: 30px; width: auto; margin-right: 10px">
         <span class="navbar-brand">Media Gallery</span>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +44,7 @@
 <div id="gallery"></div>
 
 <div id="gallery-navigation" class="gallery-navigation">
+    <div id="gallery-navigation-current-index" class="gallery-navigation-current-index"></div>
     <div id="gallery-navigation-popover" class="gallery-navigation-popover">
         <span id="gallery-navigation-popover-content-description" class="popover-content-description">none</span>
         <span id="gallery-navigation-popover-content-date" class="popover-content-date">2023-01-01</span>
@@ -78,7 +80,7 @@
                                 </div>
                             </div>
                             <div class="row form-group mt-1 align-items-center">
-                                <div class="col-sm-3 col-form-label text-sm-end">Invert sorting order</div>
+                                <div class="col-sm-3 col-form-label text-sm-end">Ascending order</div>
                                 <div class="col-sm-9">
                                     <input type="checkbox" class="form-check-input" id="order-by-direction"
                                            onclick="setOrderByDirection(this.checked)">
@@ -130,7 +132,7 @@
                         <div class="col-12">
                             <h5>Application</h5>
                             <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application"
-                                    onclick="sendApplicationShutdown()">Clean up and shutdown
+                                    onclick="sendApplicationShutdown()">Clean up and Shutdown
                             </button>
                         </div>
                     </div>
@@ -140,18 +142,19 @@
     </div>
 </div>
 
-<div class="modal fade" id="jumpToDateModal" tabindex="-1" aria-labelledby="jumpToDateModalLabel" aria-hidden="true">
+<div class="modal fade" id="jumpToPageModal" tabindex="-1" aria-labelledby="jumpToPageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="jumpToDateModalLabel">Jump to Date</h5>
+                <h5 class="modal-title" id="jumpToPageModalLabel">Jump to ...</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-12">
-                            Click below to jump to a specific date or use the hovering navigation on the right side.
+                            Click below to jump to a specific point or use the hovering navigation on the right side by
+                            moving your mouse cursor close to the right edge of the screen.
                         </div>
                     </div>
                     <div class="row">
@@ -163,12 +166,7 @@
                                     <th scope="col">Path</th>
                                 </tr>
                                 </thead>
-                                <tbody id="jump-to-table-body">
-                                <tr class="clickable" onclick="loadPage(7, true)">
-                                    <td>2023-07-22</td>
-                                    <td><code>I:\projects\photo-gallery\photo-gallery\res\thumbs</code></td>
-                                </tr>
-                                </tbody>
+                                <tbody id="jump-to-table-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -177,7 +175,6 @@
         </div>
     </div>
 </div>
-
 
 </body>
 </html>

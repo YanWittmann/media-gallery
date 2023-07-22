@@ -10,6 +10,7 @@ const galleryNavigationHoverElement = document.getElementById('gallery-navigatio
 const galleryNavigationTextDisplay = document.getElementById('gallery-navigation-popover');
 const galleryNavigationTextDisplayDescription = document.getElementById('gallery-navigation-popover-content-description');
 const galleryNavigationTextDisplayDate = document.getElementById('gallery-navigation-popover-content-date');
+const galleryNavigationCurrentIndex = document.getElementById('gallery-navigation-current-index');
 
 let totalPages = 0;
 let pagesToBeLoaded = [];
@@ -151,27 +152,6 @@ function loadPage(page, scrollIntoView = false) {
         });
 }
 
-galleryNavigationHoverElement.addEventListener('mousemove', e => handleNavigationHover(e.clientX, e.clientY, false));
-galleryNavigationHoverElement.addEventListener('touchmove', e => handleNavigationHover(e.touches[0].clientX, e.touches[0].clientY, false));
-galleryNavigationHoverElement.addEventListener('click', e => handleNavigationHover(e.clientX, e.clientY, true));
-
-function handleNavigationHover(x, y, clicked = false) {
-    const screenHeight = window.innerHeight;
-    const percentage = y / screenHeight;
-    const pagesSummaryEntriesIndex = Math.floor(percentage * pagesSummaryEntries.length);
-    const pagesSummaryEntry = pagesSummaryEntries[pagesSummaryEntriesIndex];
-
-    galleryNavigationTextDisplay.style.top = `${Math.max(Math.min(y - 20, screenHeight - 66), 10)}px`;
-    if (pagesSummaryEntry) {
-        galleryNavigationTextDisplayDescription.innerText = pagesSummaryEntry.file;
-        galleryNavigationTextDisplayDate.innerText = pagesSummaryEntry.date;
-
-        if (clicked) {
-            loadPage(pagesSummaryEntry.page, true);
-        }
-    }
-}
-
 function scrollToPage(page) {
     const element = findLastElement(Array.from(document.querySelectorAll('.gallery-item-container')).filter(container => container.dataset.page === "" + page));
     if (element) {
@@ -190,13 +170,26 @@ function getPageOfElement(element) {
 
 function getElementAtCenterOfScreen() {
     const galleryItemContainers = document.querySelectorAll('.gallery-item-container');
-    const containersWithImg = Array.from(galleryItemContainers).filter(container => container.querySelector('img'));
+    //const containersWithImg = Array.from(galleryItemContainers).filter(container => container.querySelector('img'));
+    const containersWithImg = filterVisibleElements(Array.from(galleryItemContainers));
 
     if (containersWithImg.length > 0) {
         const middleIndex = Math.floor(containersWithImg.length / 2);
         return containersWithImg[middleIndex];
     }
     return null;
+}
+
+function filterVisibleElements(elements) {
+    return elements.filter(element => {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    });
 }
 
 function getDistanceFromTop(element, scrollParent) {
@@ -224,6 +217,44 @@ function insertAfterElement(existingNode, newNode) {
     existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
 }
 
+galleryNavigationHoverElement.addEventListener('mousemove', e => handleNavigationHover(e.clientX, e.clientY, false));
+galleryNavigationHoverElement.addEventListener('touchmove', e => handleNavigationHover(e.touches[0].clientX, e.touches[0].clientY, false));
+galleryNavigationHoverElement.addEventListener('click', e => handleNavigationHover(e.clientX, e.clientY, true));
+
+function handleNavigationHover(x, y, clicked = false) {
+    const screenHeight = window.innerHeight;
+    const percentage = y / screenHeight;
+    const pagesSummaryEntriesIndex = Math.floor(percentage * pagesSummaryEntries.length);
+    const pagesSummaryEntry = pagesSummaryEntries[pagesSummaryEntriesIndex];
+
+    galleryNavigationTextDisplay.style.top = `${Math.max(Math.min(y - 20, screenHeight - 66), 10)}px`;
+    if (pagesSummaryEntry) {
+        galleryNavigationTextDisplayDescription.innerText = pagesSummaryEntry.file;
+        galleryNavigationTextDisplayDate.innerText = pagesSummaryEntry.date;
+
+        if (clicked) {
+            loadPage(pagesSummaryEntry.page, true);
+        }
+    }
+}
+
+let navigationScrollTimeout = null;
+
+document.addEventListener('scroll', handleNavigationPageScroll);
+
+function handleNavigationPageScroll(e) {
+    navigationScrollTimeout && clearTimeout(navigationScrollTimeout);
+
+    navigationScrollTimeout = setTimeout(() => {
+        const elementAtCenterOfScreen = getElementAtCenterOfScreen();
+        const currentlyViewedPage = getPageOfElement(elementAtCenterOfScreen);
+
+        const percentage = currentlyViewedPage / totalPages;
+        const screenHeight = window.innerHeight;
+        const y = percentage * screenHeight;
+        galleryNavigationCurrentIndex.style.top = `${y}px`;
+    }, 400);
+}
 
 function loadImage(placeholder) {
     if (placeholder.querySelector('img')) {
@@ -281,7 +312,6 @@ function softReloadPage() {
         });
     axios.get(`/media/summary/${orderBy}/${orderAsc}/${orderByIncludeVideos}`)
         .then(response => {
-            console.log(response.data);
             jumpToTableBody.innerHTML = '';
 
             pagesSummaryEntries = response.data.media;
@@ -415,6 +445,10 @@ function isSettingsModalActive() {
     return document.querySelector('#settingsModal.show') !== null;
 }
 
+function isNavigationModalActive() {
+    return document.querySelector('#jumpToPageModal.show') !== null;
+}
+
 fullsizeContainer.onclick = e => {
     if (e.target !== fullsizePrev && e.target !== fullsizeNext) {
         if (e.detail === 2) { // check for double click
@@ -433,6 +467,7 @@ fullsizeNext.onclick = () => {
 
 document.addEventListener('keydown', (event) => {
     const settingsModalActive = isSettingsModalActive();
+    const navigationModalActive = isNavigationModalActive();
     const fullscreenActive = isFullscreenActive();
     const userIsInteractingWithInput = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
     const userIsInteractingWithCheckbox = document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'checkbox';
@@ -450,9 +485,15 @@ document.addEventListener('keydown', (event) => {
         if (event.key === "Escape" || ((!userIsInteractingWithInput || userIsInteractingWithCheckbox) && event.key === "s")) {
             hideSettingsModal();
         }
+    } else if (navigationModalActive) {
+        if (event.key === "Escape" || ((!userIsInteractingWithInput || userIsInteractingWithCheckbox) && event.key === "n")) {
+            hideJumpToModal();
+        }
     } else {
         if (event.key === "s") {
             openSettingsModal();
+        } else if (event.key === "n") {
+            openJumpToModal();
         }
     }
 });
@@ -542,12 +583,12 @@ function hideSettingsModal() {
 
 function openJumpToModal() {
     hideSettingsModal();
-    const myModal = new bootstrap.Modal(document.getElementById('jumpToDateModal'), {});
+    const myModal = new bootstrap.Modal(document.getElementById('jumpToPageModal'), {});
     myModal.show();
 }
 
 function hideJumpToModal() {
-    const myModal = bootstrap.Modal.getInstance(document.getElementById('jumpToDateModal'));
+    const myModal = bootstrap.Modal.getInstance(document.getElementById('jumpToPageModal'));
     if (myModal) {
         myModal.hide();
     }

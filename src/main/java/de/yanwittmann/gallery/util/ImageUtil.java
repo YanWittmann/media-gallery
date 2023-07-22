@@ -55,46 +55,50 @@ public class ImageUtil {
     }
 
     public static File createThumbnail(File originalFile, File thumbnailFile, int maxSize) throws IOException {
-        if (thumbnailFile.exists()) {
-            return thumbnailFile;
-        }
-
-        BufferedImage originalImage;
-        if (originalFile.getName().endsWith(".mp4")) {
-            try {
-                originalImage = extractFirstFrameFromVideo(originalFile);
-            } catch (FrameGrabber.Exception e) {
-                throw new RuntimeException("Failed to extract thumbnail from video file: " + originalFile.getAbsolutePath(), e);
+        try {
+            if (thumbnailFile.exists()) {
+                return thumbnailFile;
             }
-        } else {
-            originalImage = ImageIO.read(originalFile);
+
+            BufferedImage originalImage;
+            if (originalFile.getName().endsWith(".mp4")) {
+                try {
+                    originalImage = extractFirstFrameFromVideo(originalFile);
+                } catch (FrameGrabber.Exception e) {
+                    throw new RuntimeException("Failed to extract thumbnail from video file: " + originalFile.getAbsolutePath(), e);
+                }
+            } else {
+                originalImage = ImageIO.read(originalFile);
+            }
+
+
+            int width = originalImage.getWidth();
+            int height = originalImage.getHeight();
+
+            if (width > maxSize) {
+                height = (int) (height * ((double) maxSize / width));
+                width = maxSize;
+            }
+
+            if (height > maxSize) {
+                width = (int) (width * ((double) maxSize / height));
+                height = maxSize;
+            }
+
+            BufferedImage thumbnailImage = new BufferedImage(width, height, originalImage.getType());
+            Graphics2D g = thumbnailImage.createGraphics();
+            g.drawImage(originalImage, 0, 0, width, height, null);
+            g.dispose();
+
+            if (!thumbnailFile.getParentFile().exists()) {
+                thumbnailFile.getParentFile().mkdirs();
+            }
+
+            ImageIO.write(thumbnailImage, "png", thumbnailFile);
+
+            return thumbnailFile;
+        } catch (IOException e) {
+            throw new IOException("Failed to create thumbnail for file: " + originalFile.getAbsolutePath(), e);
         }
-
-
-        int width = originalImage.getWidth();
-        int height = originalImage.getHeight();
-
-        if (width > maxSize) {
-            height = (int) (height * ((double) maxSize / width));
-            width = maxSize;
-        }
-
-        if (height > maxSize) {
-            width = (int) (width * ((double) maxSize / height));
-            height = maxSize;
-        }
-
-        BufferedImage thumbnailImage = new BufferedImage(width, height, originalImage.getType());
-        Graphics2D g = thumbnailImage.createGraphics();
-        g.drawImage(originalImage, 0, 0, width, height, null);
-        g.dispose();
-
-        if (!thumbnailFile.getParentFile().exists()) {
-            thumbnailFile.getParentFile().mkdirs();
-        }
-
-        ImageIO.write(thumbnailImage, "png", thumbnailFile);
-
-        return thumbnailFile;
     }
 }

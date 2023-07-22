@@ -1,5 +1,6 @@
 :root {
     --color-video: #ff3000;
+    --color-brand-primary: #ff3000;
 }
 
 html, body {
@@ -173,7 +174,7 @@ It is hidden by default, unless it has the class 'open'.
 }
 
 .disable-webpage::after {
-    border: 8px solid transparent;
+    border: 10px solid transparent;
     border-top-color: #ff3000;
     border-bottom-color: #ff3000;
     animation-direction: reverse;
@@ -206,7 +207,7 @@ It is hidden by default, unless it has the class 'open'.
     z-index: 100;
     opacity: 0;
     cursor: pointer;
-    box-shadow: inset -20px 0px 40px rgba(255, 255, 255, 0.5), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    box-shadow: inset -20px 0 40px rgba(255, 255, 255, 0.5), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -248,4 +249,13 @@ It is hidden by default, unless it has the class 'open'.
     background-color: var(--bs-blue);
     color: #fff;
     border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.gallery-navigation-current-index {
+    position: fixed;
+    right: 0;
+    width: 80px;
+    height: 6px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, var(--bs-blue) 15%);
+    pointer-events: none;
 }

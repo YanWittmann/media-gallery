@@ -22,7 +22,6 @@ public class ImageUtil {
     //private static final long MAX_THUMB_AGE = TimeUnit.SECONDS.toMillis(10);
     //private static final long DELETE_INTERVAL = TimeUnit.SECONDS.toMillis(2);
 
-
     public static void initializeThumbnailCleanup(File directoryPath) {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             final File[] files = directoryPath.listFiles();

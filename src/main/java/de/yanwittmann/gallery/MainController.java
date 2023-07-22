@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @SpringBootApplication
 @RestController
+@Import(de.yanwittmann.gallery.media.CleanupComponent.class)
 public class MainController {
 
     public static final Logger LOG = LoggerFactory.getLogger(MainController.class);
@@ -100,6 +102,13 @@ public class MainController {
         return new JSONObject()
                 .put("settings", mediaService.getSettings().toJson())
                 .toString();
+    }
+
+    @GetMapping("/system/shutdown")
+    public String getSystemExitAndShutdown() {
+        AppEntryPoint.stop();
+        // lolol as if this would ever be reached
+        return new JSONObject().put("success", true).toString();
     }
 
     @PostMapping("/settings/path/rescan")

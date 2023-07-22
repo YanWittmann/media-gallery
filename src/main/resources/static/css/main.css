@@ -113,13 +113,7 @@ It is hidden by default, unless it has the class 'open'.
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-
-    border-radius: 100%;
-    width: 47px;
-    height: 47px;
     text-align: center;
-    background: rgba(0, 0, 0, 0.5);
-    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.7));
 }
 
 .fullsize-nav.fullsize-prev {

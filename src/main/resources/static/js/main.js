@@ -1,4 +1,4 @@
-const THUMBNAIL_SIZE = 400;
+const DEFAULT_THUMBNAIL_SIZE = 400;
 
 const gallery = document.getElementById('gallery');
 const fullsizeImage = document.getElementById('fullsize-image');
@@ -14,8 +14,8 @@ let currentlyActiveFullscreenImageId = null;
 let orderBy = 'date';
 let orderAsc = false;
 let orderByIncludeVideos = false;
+let thumbnailSize = DEFAULT_THUMBNAIL_SIZE;
 
-// Fetch the total number of pages
 axios.get('/media/page/count/' + orderByIncludeVideos)
     .then(response => {
         totalPages = response.data.total;
@@ -23,7 +23,7 @@ axios.get('/media/page/count/' + orderByIncludeVideos)
         loadNextPage();
     });
 
-// Create an Intersection Observer to load the next page when the user scrolls to the bottom
+// Intersection Observer to load the next page when the user scrolls to the bottom
 const pageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -33,7 +33,7 @@ const pageObserver = new IntersectionObserver(entries => {
     });
 });
 
-// Create another Intersection Observer to load and unload images/videos as they scroll into and out of view
+// Intersection Observer to load and unload images/videos as they scroll into and out of view
 const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -44,7 +44,7 @@ const imageObserver = new IntersectionObserver(entries => {
     });
 }, {
     root: null,
-    rootMargin: '200px'  // Load/unload images/videos when they're within 200px of the visible area
+    rootMargin: '400px'  // load/unload images/videos when they're within a radius of the visible area
 });
 
 function loadNextPage() {
@@ -82,7 +82,7 @@ function loadImage(placeholder) {
 
     const id = placeholder.dataset.id;
     const img = document.createElement('img');
-    img.src = `/media/get/${id}/thumb/${THUMBNAIL_SIZE}`;
+    img.src = `/media/get/${id}/thumb/${thumbnailSize}`;
     img.onload = () => {
         placeholder.style.height = 'auto';
         img.onclick = () => {
@@ -118,6 +118,8 @@ function softReloadPage() {
     currentPage = 0;
     totalPages = 0;
     while (gallery.firstChild) {
+        pageObserver.unobserve(gallery.firstChild)
+        imageObserver.unobserve(gallery.firstChild)
         gallery.removeChild(gallery.firstChild);
     }
     axios.get('/media/page/count/' + orderByIncludeVideos)
@@ -192,10 +194,7 @@ function hideFullSizeImage() {
 }
 
 function openInEnclosingFolder(id) {
-    axios.get(`/system/show-in-folder/${id}`)
-        .then(response => {
-            console.log(response);
-        });
+    axios.get(`/system/show-in-folder/${id}`);
 }
 
 function getNextFullSizeImageId() {
@@ -235,6 +234,14 @@ function previousFullSizeImage() {
     }
 }
 
+function isFullscreenActive() {
+    return fullsizeContainer.classList.contains('open');
+}
+
+function isSettingsModalActive() {
+    return document.querySelector('#settingsModal.show') !== null;
+}
+
 fullsizeContainer.onclick = e => {
     if (e.target !== fullsizePrev && e.target !== fullsizeNext) {
         if (e.detail === 2) { // check for double click
@@ -252,12 +259,28 @@ fullsizeNext.onclick = () => {
 }
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === "Escape") {
-        hideFullSizeImage();
-    } else if (event.key === "ArrowLeft") {
-        previousFullSizeImage();
-    } else if (event.key === "ArrowRight") {
-        nextFullSizeImage();
+    const settingsModalActive = isSettingsModalActive();
+    const fullscreenActive = isFullscreenActive();
+    const userIsInteractingWithInput = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+    const userIsInteractingWithCheckbox = document.activeElement.tagName === 'INPUT' && document.activeElement.type === 'checkbox';
+
+    if (fullscreenActive) {
+        if (event.key === "Escape") {
+            hideFullSizeImage();
+        } else if (event.key === "ArrowLeft") {
+            previousFullSizeImage();
+        } else if (event.key === "ArrowRight") {
+            nextFullSizeImage();
+        }
+    }
+    if (settingsModalActive) {
+        if (event.key === "Escape" || ((!userIsInteractingWithInput || userIsInteractingWithCheckbox) && event.key === "s")) {
+            hideSettingsModal();
+        }
+    } else {
+        if (event.key === "s") {
+            openSettingsModal();
+        }
     }
 });
 
@@ -334,12 +357,10 @@ function hideSettingsModal() {
     myModal.hide();
 }
 
-// {"settings":{"image_directories":["D:\\files\\media\\images\\screenshots\\nintendo_switch","D:\\files\\media\\images\\screenshots\\games"],"index_on_startup":false}}
 function populateSettingsModalData() {
     axios.get('/settings/get')
         .then(response => {
             const settings = response.data.settings;
-            console.log(settings);
             const imageDirectories = settings.image_directories;
             const disabledImageDirectories = settings.disabled_image_directories;
             const indexOnStartup = settings.index_on_startup;
@@ -367,10 +388,12 @@ function populateSettingsModalData() {
 
             const reindexOnStartup = document.getElementById('reindex-on-startup');
             reindexOnStartup.checked = indexOnStartup;
-
-            document.getElementById('order-by-direction').checked = orderAsc;
-            document.getElementById('order-by-videos').checked = orderByIncludeVideos;
         });
+
+    document.getElementById('order-by-direction').checked = orderAsc;
+    document.getElementById('order-by-videos').checked = orderByIncludeVideos;
+
+    document.getElementById('thumbnail-size').value = thumbnailSize;
 }
 
 function rescanImageDirectory(path) {
@@ -441,6 +464,21 @@ function setReindexOnStartup(checked) {
         });
 }
 
+function sendApplicationShutdown() {
+    const shutdownApplicationButton = document.getElementById('shutdown-application');
+    shutdownApplicationButton.disabled = true;
+
+    axios.get('/system/shutdown')
+        .then(response => {
+            shutdownApplicationButton.disabled = false;
+            shutdownApplicationButton.innerText = 'Failed to shutdown application';
+        })
+        .catch(error => {
+            shutdownApplicationButton.disabled = false;
+            shutdownApplicationButton.innerText = 'Application terminated successfully';
+        });
+}
+
 function setOrderBy(selection) {
     orderBy = selection;
     softReloadPage();
@@ -454,6 +492,16 @@ function setOrderByDirection(checked) {
 function setOrderByIncludeVideos(checked) {
     orderByIncludeVideos = checked;
     softReloadPage();
+}
+
+function setThumbnailSize(size) {
+    if (size > 100 && size < 1000) {
+        thumbnailSize = size;
+        document.getElementById('thumbnail-size').classList.remove('is-invalid');
+        softReloadPage();
+    } else {
+        document.getElementById('thumbnail-size').classList.add('is-invalid');
+    }
 }
 
 function tryToPreloadImage(src) {

@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -226,6 +227,59 @@ public class MediaService {
                 }).stream()
                 .map(MediaRow::getId)
                 .collect(Collectors.toList());
+    }
+
+    public List<MediaRow> getMediaForSummary(String orderBy, boolean asc, boolean includeVideos) throws SQLException {
+        final String primaryOrderBy;
+        final String secondaryOrderBy;
+        switch (orderBy) {
+            case "name":
+                primaryOrderBy = "file";
+                secondaryOrderBy = "last_edited";
+                break;
+            case "date":
+            default:
+                primaryOrderBy = "last_edited";
+                secondaryOrderBy = "file";
+                break;
+        }
+
+        final String effectiveAsc = asc ? "ASC" : "DESC";
+
+        final String whereClauseForDisabledMedia = buildWhereClauseFromDisabledMedia();
+        final String whereClauseForVideos = includeVideos ? "" : " file NOT LIKE '%.mp4'";
+
+        final StringJoiner whereClauseJoiner = new StringJoiner(" AND ");
+        if (!whereClauseForDisabledMedia.isEmpty()) {
+            whereClauseJoiner.add(whereClauseForDisabledMedia);
+        }
+        if (!whereClauseForVideos.isEmpty()) {
+            whereClauseJoiner.add(whereClauseForVideos);
+        }
+
+        final List<MediaRow> rows = new ArrayList<>();
+
+        for (int page = 0; page < getPageCount(includeVideos); page++) {
+            int finalPage = page;
+
+            final List<MediaRow> mediaRows = this.mediaTable.getByPreparedStatement(connection -> {
+                try {
+                    final PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + mediaTable.getTableName() + (whereClauseJoiner.length() > 0 ? " WHERE " + whereClauseJoiner : "") + " ORDER BY " + primaryOrderBy + " " + effectiveAsc + ", " + secondaryOrderBy + " " + effectiveAsc + " LIMIT 1 OFFSET ?");
+                    statement.setInt(1, finalPage * PAGINATION_ENTRIES_PER_PAGE);
+                    return statement;
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            if (!mediaRows.isEmpty()) {
+                rows.add(mediaRows.get(0));
+            } else {
+                rows.add(null);
+            }
+        }
+
+        return rows;
     }
 
     private List<Long> getDisabledMedia() {

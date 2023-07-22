@@ -2,6 +2,7 @@ package de.yanwittmann.gallery;
 
 import de.yanwittmann.gallery.media.MediaService;
 import de.yanwittmann.gallery.media.config.ConfigField;
+import de.yanwittmann.gallery.media.db.MediaRow;
 import de.yanwittmann.gallery.util.ImageUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @SpringBootApplication
@@ -46,6 +48,24 @@ public class MainController {
     @GetMapping("/media/page/count/{includeVideos}")
     public String getMedia(@PathVariable boolean includeVideos) {
         return new JSONObject().put("total", String.valueOf(mediaService.getPageCount(includeVideos))).toString();
+    }
+
+    @GetMapping("/media/summary/{orderBy}/{asc}/{includeVideos}")
+    public String getMediaSummary(@PathVariable String orderBy, @PathVariable boolean asc, @PathVariable boolean includeVideos) throws SQLException {
+        final List<MediaRow> mediaForSummary = mediaService.getMediaForSummary(orderBy, asc, includeVideos);
+        final JSONArray media = new JSONArray();
+        for (int i = 0; i < mediaForSummary.size(); i++) {
+            final MediaRow mediaRow = mediaForSummary.get(i);
+            media.put(new JSONObject()
+                    .put("page", i)
+                    .put("id", mediaRow.getId())
+                    .put("date", mediaRow.getLastEditedAsYYYY_MM_DD())
+                    .put("file", mediaRow.getFileForSummary())
+            );
+        }
+        return new JSONObject()
+                .put("media", media)
+                .toString();
     }
 
     @GetMapping("/media/page/{page}/{orderBy}/{asc}/{includeVideos}")

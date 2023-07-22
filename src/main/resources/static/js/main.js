@@ -5,9 +5,16 @@ const fullsizeImage = document.getElementById('fullsize-image');
 const fullsizeContainer = document.getElementById('fullsize-container');
 const fullsizePrev = document.getElementById('fullsize-prev');
 const fullsizeNext = document.getElementById('fullsize-next');
+const jumpToTableBody = document.getElementById('jump-to-table-body');
+const galleryNavigationHoverElement = document.getElementById('gallery-navigation');
+const galleryNavigationTextDisplay = document.getElementById('gallery-navigation-popover');
+const galleryNavigationTextDisplayDescription = document.getElementById('gallery-navigation-popover-content-description');
+const galleryNavigationTextDisplayDate = document.getElementById('gallery-navigation-popover-content-date');
 
 let totalPages = 0;
 let pagesToBeLoaded = [];
+
+let pagesSummaryEntries = [];
 
 let currentlyActiveFullscreenImageId = null;
 
@@ -48,6 +55,10 @@ function loadPage(page, scrollIntoView = false) {
 
     if (isLargerThanTotalPages || isNotToBeLoaded) {
         console.log(`Skipping loading page ${page}...`, isLargerThanTotalPages, isNotToBeLoaded)
+
+        if (scrollIntoView) {
+            scrollToPage(page);
+        }
         return;
     }
     console.log(`Loading page ${page}...`)
@@ -103,7 +114,6 @@ function loadPage(page, scrollIntoView = false) {
             if (isCurrentlyViewedPageAfter && elementAtCenterOfScreen) {
                 const scrollHeightOfElementAtCenterOfScreenAfterAddingElements = getDistanceFromTop(elementAtCenterOfScreen, gallery);
                 const scrollDifference = scrollHeightOfElementAtCenterOfScreenAfterAddingElements - scrollHeightOfElementAtCenterOfScreen;
-                console.log("readjusting scroll position to", elementAtCenterOfScreen, scrollHeightOfElementAtCenterOfScreenAfterAddingElements, scrollHeightOfElementAtCenterOfScreen, scrollDifference)
                 window.scrollBy(0, scrollDifference);
                 elementAtCenterOfScreen.scrollIntoView();
             }
@@ -125,17 +135,50 @@ function loadPage(page, scrollIntoView = false) {
             if (scrollIntoView) {
                 const scrollTo = findLastElement(addedItems);
                 if (scrollTo) {
+                    disableWebpage(3);
                     loadPage(page - 1, false);
-                    console.log("scrolling to page", scrollTo);
-                    loadImage(scrollTo)
+                    loadImage(scrollTo);
                     for (let i = 100; i < 4000; i++) {
                         setTimeout(() => {
                             scrollTo.scrollIntoView();
+                            if (i === 3999) {
+                                enableWebpage();
+                            }
                         }, i);
                     }
                 }
             }
         });
+}
+
+galleryNavigationHoverElement.addEventListener('mousemove', e => handleNavigationHover(e.clientX, e.clientY, false));
+galleryNavigationHoverElement.addEventListener('touchmove', e => handleNavigationHover(e.touches[0].clientX, e.touches[0].clientY, false));
+galleryNavigationHoverElement.addEventListener('click', e => handleNavigationHover(e.clientX, e.clientY, true));
+
+function handleNavigationHover(x, y, clicked = false) {
+    const screenHeight = window.innerHeight;
+    const percentage = y / screenHeight;
+    const pagesSummaryEntriesIndex = Math.floor(percentage * pagesSummaryEntries.length);
+    const pagesSummaryEntry = pagesSummaryEntries[pagesSummaryEntriesIndex];
+
+    galleryNavigationTextDisplay.style.top = `${Math.max(Math.min(y - 20, screenHeight - 66), 10)}px`;
+    if (pagesSummaryEntry) {
+        galleryNavigationTextDisplayDescription.innerText = pagesSummaryEntry.file;
+        galleryNavigationTextDisplayDate.innerText = pagesSummaryEntry.date;
+
+        if (clicked) {
+            loadPage(pagesSummaryEntry.page, true);
+        }
+    }
+}
+
+function scrollToPage(page) {
+    const element = findLastElement(Array.from(document.querySelectorAll('.gallery-item-container')).filter(container => container.dataset.page === "" + page));
+    if (element) {
+        element.scrollIntoView();
+        return true;
+    }
+    return false;
 }
 
 function getPageOfElement(element) {
@@ -235,6 +278,28 @@ function softReloadPage() {
             pagesToBeLoaded = Array.from({length: totalPages}, (_, i) => i);
             console.log(`Total pages: ${totalPages}`);
             loadPage(0);
+        });
+    axios.get(`/media/summary/${orderBy}/${orderAsc}/${orderByIncludeVideos}`)
+        .then(response => {
+            console.log(response.data);
+            jumpToTableBody.innerHTML = '';
+
+            pagesSummaryEntries = response.data.media;
+
+            response.data.media.forEach((item, index) => {
+                const row = jumpToTableBody.insertRow();
+                const dateCell = row.insertCell();
+                const fileCell = row.insertCell();
+
+                dateCell.innerText = item.date;
+                fileCell.innerText = item.file;
+
+                row.onclick = () => {
+                    loadPage(item.page, true);
+                };
+                row.classList.add('clickable');
+                fileCell.classList.add('code');
+            });
         });
 }
 
@@ -439,10 +504,17 @@ function handleTouchMove(evt) {
     yDown = null;
 }
 
-function disableWebpage() {
+function disableWebpage(level = 1) {
     enableWebpage();
     const disableWebpage = document.createElement('div');
     disableWebpage.classList.add('disable-webpage');
+    if (level === 1) {
+        disableWebpage.classList.add('l1');
+    } else if (level === 2) {
+        disableWebpage.classList.add('l2');
+    } else if (level === 3) {
+        disableWebpage.classList.add('l3');
+    }
     disableWebpage.onclick = () => false;
     document.body.appendChild(disableWebpage);
 }
@@ -455,6 +527,7 @@ function enableWebpage() {
 }
 
 function openSettingsModal() {
+    hideJumpToModal();
     const myModal = new bootstrap.Modal(document.getElementById('settingsModal'), {});
     myModal.show();
     populateSettingsModalData();
@@ -462,7 +535,22 @@ function openSettingsModal() {
 
 function hideSettingsModal() {
     const myModal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-    myModal.hide();
+    if (myModal) {
+        myModal.hide();
+    }
+}
+
+function openJumpToModal() {
+    hideSettingsModal();
+    const myModal = new bootstrap.Modal(document.getElementById('jumpToDateModal'), {});
+    myModal.show();
+}
+
+function hideJumpToModal() {
+    const myModal = bootstrap.Modal.getInstance(document.getElementById('jumpToDateModal'));
+    if (myModal) {
+        myModal.hide();
+    }
 }
 
 function populateSettingsModalData() {

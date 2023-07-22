@@ -8,6 +8,8 @@ import de.yanwittmann.gallery.db.dao.PrimaryKey;
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MediaRow extends JdbcRow {
 
@@ -60,12 +62,39 @@ public class MediaRow extends JdbcRow {
         return file;
     }
 
+    private final static int MAX_FILE_PARTS = 4;
+
+    public String getFileForSummary() {
+        final List<String> parts = new ArrayList<>();
+
+        File file = getFile();
+
+        for (int i = 0; i < MAX_FILE_PARTS; i++) {
+            file = file.getParentFile();
+            if (file == null) break;
+            parts.add(file.getName());
+        }
+
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (int i = parts.size() - 1; i >= 0; i--) {
+            stringBuilder.append(parts.get(i));
+            if (i != 0) stringBuilder.append("/");
+        }
+
+        return stringBuilder.toString();
+    }
+
     public File getFile() {
         return new File(file);
     }
 
     public Timestamp getLastEdited() {
         return last_edited;
+    }
+
+    public String getLastEditedAsYYYY_MM_DD() {
+        if (last_edited == null) return "unknown";
+        return last_edited.toLocalDateTime().toLocalDate().toString();
     }
 
     public Long getBasePathHash() {

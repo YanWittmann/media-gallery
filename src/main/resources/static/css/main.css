@@ -125,7 +125,7 @@ It is hidden by default, unless it has the class 'open'.
     right: 30px;
 }
 
-.code {
+.code, code {
     font-family: 'Roboto Mono', monospace;
     background-color: #eee;
     padding: 10px;
@@ -142,5 +142,110 @@ It is hidden by default, unless it has the class 'open'.
     height: 100%;
     pointer-events: none;
     z-index: 3000;
+}
+
+.disable-webpage.l1 {
     background-color: rgba(255, 255, 255, 0.3);
+}
+
+.disable-webpage.l2 {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.disable-webpage.l3 {
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.disable-webpage::before, .disable-webpage::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    margin: -50px 0 0 -50px;
+    border-radius: 14%;
+    animation: spin 2s infinite linear;
+}
+
+.disable-webpage::before {
+    border: 8px solid #dedede;
+}
+
+.disable-webpage::after {
+    border: 8px solid transparent;
+    border-top-color: #ff3000;
+    border-bottom-color: #ff3000;
+    animation-direction: reverse;
+    width: 80px;
+    height: 80px;
+    margin: -40px 0 0 -40px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.gallery-navigation {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 80px;
+    height: 100vh;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.8) 80%, rgb(255, 255, 255) 100%);
+    transition: all 0.2s ease-in-out;
+    z-index: 100;
+    opacity: 0;
+    cursor: pointer;
+    box-shadow: inset -20px 0px 40px rgba(255, 255, 255, 0.5), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.gallery-navigation:hover, .gallery-navigation.open {
+    width: 90px;
+    opacity: 1;
+}
+
+.gallery-navigation-popover {
+    position: fixed;
+    right: 110px;
+    width: fit-content;
+    max-width: 600px;
+    background-color: #f8f9fa;
+    pointer-events: none;
+    display: inline-flex;
+    flex-direction: row;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #212529;
+    padding: 8px;
+    border-radius: 0.25rem;
+}
+
+.popover-content-description {
+    padding: 10px;
+    width: fit-content;
+    background-color: #e9ecef;
+    border-right: 1px solid #dee2e6;
+    border-radius: 0.25rem 0 0 0.25rem;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.popover-content-date {
+    padding: 10px;
+    width: fit-content;
+    background-color: var(--bs-blue);
+    color: #fff;
+    border-radius: 0 0.25rem 0.25rem 0;
 }

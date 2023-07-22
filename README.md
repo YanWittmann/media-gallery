@@ -26,10 +26,11 @@ Quickly jump to a specific date or directory and see your current position.
 By indexing the directories you specify, the application will be able to very quickly query your media files and update
 the display when you change display parameters.
 
-### Endless scrolling
+### Endless scrolling and large amounts of media files
 
 The application will load more media files as you scroll down the timeline and unload those that are no longer visible
-to allow for scrolling through endless amounts of media files in a single timeline.
+to allow for scrolling through endless amounts of media files in a single timeline. This is why the application supports
+very large amounts of media files.
 
 ### Video support
 

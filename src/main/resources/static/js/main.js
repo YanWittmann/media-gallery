@@ -597,10 +597,10 @@ function hideJumpToModal() {
 function populateSettingsModalData() {
     axios.get('/settings/get')
         .then(response => {
-            const settings = response.data.settings;
-            const imageDirectories = settings.image_directories;
-            const disabledImageDirectories = settings.disabled_image_directories;
-            const indexOnStartup = settings.index_on_startup;
+            const settings = response.data.settings || {};
+            const imageDirectories = settings.image_directories || [];
+            const disabledImageDirectories = settings.disabled_image_directories || [];
+            const indexOnStartup = settings.index_on_startup || false;
 
             const table = document.getElementById('settings-table');
             const tbody = table.querySelector('tbody');

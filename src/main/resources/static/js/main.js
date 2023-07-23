@@ -444,18 +444,21 @@ function showLargeImageMetadata(id = currentlyActiveFullscreenImageId) {
             const tableBody = document.getElementById('image-metadata-table-body');
             tableBody.innerHTML = '';
 
-            const addRow = (key, value) => {
+            const addRow = (key, value, clazz = null) => {
                 const row = tableBody.insertRow();
                 const keyCell = row.insertCell();
                 const valueCell = row.insertCell();
 
                 keyCell.innerText = key;
                 valueCell.innerText = value;
+                if (clazz) {
+                    valueCell.classList.add(clazz);
+                }
             }
 
             addRow('Type', response.data.type);
-            addRow('Filename', response.data.filename);
-            addRow('Path', response.data.path);
+            addRow('Filename', response.data.filename, "code");
+            addRow('Path', response.data.path, "code");
             addRow('Size', response.data.size);
             addRow('Last Modified', response.data.lastModified);
 

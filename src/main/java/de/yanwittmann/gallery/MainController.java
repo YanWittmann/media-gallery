@@ -3,6 +3,7 @@ package de.yanwittmann.gallery;
 import de.yanwittmann.gallery.media.MediaService;
 import de.yanwittmann.gallery.media.config.ConfigField;
 import de.yanwittmann.gallery.media.db.MediaRow;
+import de.yanwittmann.gallery.util.FileWalkerUtils;
 import de.yanwittmann.gallery.util.ImageUtil;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
@@ -88,8 +89,8 @@ public class MainController {
 
     private String getFileExtension(File file) {
         String fileName = file.getName();
-        if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
-            return fileName.substring(fileName.lastIndexOf(".")+1);
+        if (fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+            return fileName.substring(fileName.lastIndexOf(".") + 1);
         else return "";
     }
 
@@ -108,6 +109,19 @@ public class MainController {
         final File file = mediaService.getMediaFile(id);
         return new JSONObject()
                 .put("type", file == null ? "unknown" : (file.getName().endsWith(".mp4") || file.getName().endsWith(".mov")) ? "vid" : "img")
+                .toString();
+    }
+
+    @GetMapping("/media/get/{id}/metadata")
+    public String getMediaMetadata(@PathVariable long id) {
+        final MediaRow media = mediaService.getMedia(id);
+        final File file = media.getFile();
+        return new JSONObject()
+                .put("type", file == null ? "unknown" : ((file.getName().endsWith(".mp4") || file.getName().endsWith(".mov")) ? "vid" : "img") + "/" + getFileExtension(file))
+                .put("filename", file == null ? "unknown" : file.getName())
+                .put("path", file == null ? "unknown" : file.getAbsolutePath())
+                .put("size", file == null ? "unknown" : FileWalkerUtils.formatFileSize(file.length()))
+                .put("lastModified", file == null ? "unknown" : media.getLastEditedAsYYYY_MM_DD())
                 .toString();
     }
 

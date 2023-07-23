@@ -53,9 +53,13 @@
 
 
 <div id="fullsize-container" class="fullsize-container">
+    <div id="fullsize-image" class="fullsize-image"></div>
     <div id="fullsize-prev" class="fullsize-prev fullsize-nav">◄</div>
     <div id="fullsize-next" class="fullsize-next fullsize-nav">►</div>
-    <div id="fullsize-image" class="fullsize-image"></div>
+    <div id="fullsize-lower-container" class="fullsize-lower-container">
+        <span class="open-in-enclosing-folder fullsize-lower-container-element" onclick="openInEnclosingFolder()">Reveal in folder</span>
+        <span class="show-image-metadata fullsize-lower-container-element" onclick="showLargeImageMetadata()">Image metadata</span>
+    </div>
 </div>
 
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
@@ -172,6 +176,34 @@
                                 </tr>
                                 </thead>
                                 <tbody id="jump-to-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="showImageMetadata" tabindex="-1" aria-labelledby="showImageMetadataLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="showImageMetadataLabel">Image metadata</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <table id="image-metadata-table" class="table table-striped table-hover">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Property</th>
+                                    <th scope="col">Value</th>
+                                </tr>
+                                </thead>
+                                <tbody id="image-metadata-table-body"></tbody>
                             </table>
                         </div>
                     </div>

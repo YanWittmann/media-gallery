@@ -5,6 +5,7 @@ const fullsizeImage = document.getElementById('fullsize-image');
 const fullsizeContainer = document.getElementById('fullsize-container');
 const fullsizePrev = document.getElementById('fullsize-prev');
 const fullsizeNext = document.getElementById('fullsize-next');
+const fullsizeLowerContainer = document.getElementById('fullsize-lower-container');
 const jumpToTableBody = document.getElementById('jump-to-table-body');
 const galleryNavigationHoverElement = document.getElementById('gallery-navigation');
 const galleryNavigationTextDisplay = document.getElementById('gallery-navigation-popover');
@@ -188,14 +189,18 @@ function getPageOfElement(element) {
 
 function getElementAtCenterOfScreen() {
     const galleryItemContainers = document.querySelectorAll('.gallery-item-container');
-    //const containersWithImg = Array.from(galleryItemContainers).filter(container => container.querySelector('img'));
-    const containersWithImg = filterVisibleElements(Array.from(galleryItemContainers));
+    const containersWithImg = filterVisibleElements(Array.from(galleryItemContainers).filter(container => container.querySelector('img')));
 
     if (containersWithImg.length > 0) {
         const middleIndex = Math.floor(containersWithImg.length / 2);
         return containersWithImg[middleIndex];
     }
     return null;
+}
+
+function getOffsetInPage(element) {
+    const galleryItemContainers = document.querySelectorAll('.gallery-item-container[data-page="' + element.dataset.page + '"]');
+    return [galleryItemContainers.length, Array.from(galleryItemContainers).indexOf(element)];
 }
 
 function filterVisibleElements(elements) {
@@ -259,19 +264,31 @@ function handleNavigationHover(x, y, clicked = false) {
 let navigationScrollTimeout = null;
 
 document.addEventListener('scroll', handleNavigationPageScroll);
+galleryNavigationHoverElement.addEventListener('mouseenter', e => handleNavigationPageScroll(e, true));
+galleryNavigationHoverElement.addEventListener('pointerenter', e => handleNavigationPageScroll(e, true));
 
-function handleNavigationPageScroll(e) {
+function handleNavigationPageScroll(e, forceUpdate = false) {
     navigationScrollTimeout && clearTimeout(navigationScrollTimeout);
+
+    if (!forceUpdate && window.getComputedStyle(galleryNavigationHoverElement).opacity === '0') {
+        return;
+    }
 
     navigationScrollTimeout = setTimeout(() => {
         const elementAtCenterOfScreen = getElementAtCenterOfScreen();
+        const offsetInPage = getOffsetInPage(elementAtCenterOfScreen); // [total, index]
         const currentlyViewedPage = getPageOfElement(elementAtCenterOfScreen);
 
-        const percentage = currentlyViewedPage / totalPages;
+        //const percentage = currentlyViewedPage / totalPages; // old code without offset in page
+
+        // new code uses both the total pages and the offset in page to calculate the percentage to further increase the detail of the navigation
+        const percentage = (currentlyViewedPage + (offsetInPage[1] / offsetInPage[0])) / totalPages;
+
         const screenHeight = window.innerHeight;
         const y = percentage * screenHeight;
+
         galleryNavigationCurrentIndex.style.top = `${y}px`;
-    }, 400);
+    }, 100);
 }
 
 function loadImage(placeholder) {
@@ -415,8 +432,35 @@ function hideFullSizeImage() {
     currentlyActiveFullscreenImageId = null;
 }
 
-function openInEnclosingFolder(id) {
+function openInEnclosingFolder(id = currentlyActiveFullscreenImageId) {
     axios.get(`/system/show-in-folder/${id}`);
+}
+
+function showLargeImageMetadata(id = currentlyActiveFullscreenImageId) {
+    axios.get(`/media/get/${id}/metadata`)
+        .then(response => {
+            document.getElementById('showImageMetadataLabel').innerText = response.data.filename;
+
+            const tableBody = document.getElementById('image-metadata-table-body');
+            tableBody.innerHTML = '';
+
+            const addRow = (key, value) => {
+                const row = tableBody.insertRow();
+                const keyCell = row.insertCell();
+                const valueCell = row.insertCell();
+
+                keyCell.innerText = key;
+                valueCell.innerText = value;
+            }
+
+            addRow('Type', response.data.type);
+            addRow('Filename', response.data.filename);
+            addRow('Path', response.data.path);
+            addRow('Size', response.data.size);
+            addRow('Last Modified', response.data.lastModified);
+
+            openMediaMetadataModal();
+        });
 }
 
 function getNextFullSizeImageId(id = currentlyActiveFullscreenImageId) {
@@ -438,7 +482,6 @@ function nextFullSizeImage() {
                 tryToPreloadImage(`/media/get/${nextNextImage.nextSibling.dataset.id}/full`);
             }
         } catch (e) {
-            console.log(e);
         }
         showFullSizeImage(nextImage);
     }
@@ -455,7 +498,6 @@ function previousFullSizeImage() {
                 tryToPreloadImage(`/media/get/${previousPreviousImage.previousSibling.dataset.id}/full`);
             }
         } catch (e) {
-            console.log(e);
         }
         showFullSizeImage(previousImage);
     }
@@ -474,7 +516,7 @@ function isNavigationModalActive() {
 }
 
 fullsizeContainer.onclick = e => {
-    if (e.target !== fullsizePrev && e.target !== fullsizeNext) {
+    if (e.target !== fullsizePrev && e.target !== fullsizeNext && e.target !== fullsizeLowerContainer && !fullsizeLowerContainer.contains(e.target)) {
         if (e.detail === 2) { // check for double click
             openInEnclosingFolder(currentlyActiveFullscreenImageId);
         } else if (e.button === 0) { // left click
@@ -593,6 +635,7 @@ function enableWebpage() {
 
 function openSettingsModal() {
     hideJumpToModal();
+    hideMediaMetadataModal();
     const myModal = new bootstrap.Modal(document.getElementById('settingsModal'), {});
     myModal.show();
     populateSettingsModalData();
@@ -607,12 +650,27 @@ function hideSettingsModal() {
 
 function openJumpToModal() {
     hideSettingsModal();
+    hideMediaMetadataModal();
     const myModal = new bootstrap.Modal(document.getElementById('jumpToPageModal'), {});
     myModal.show();
 }
 
 function hideJumpToModal() {
     const myModal = bootstrap.Modal.getInstance(document.getElementById('jumpToPageModal'));
+    if (myModal) {
+        myModal.hide();
+    }
+}
+
+function openMediaMetadataModal() {
+    hideSettingsModal();
+    hideJumpToModal();
+    const myModal = new bootstrap.Modal(document.getElementById('showImageMetadata'), {});
+    myModal.show();
+}
+
+function hideMediaMetadataModal() {
+    const myModal = bootstrap.Modal.getInstance(document.getElementById('showImageMetadata'));
     if (myModal) {
         myModal.hide();
     }

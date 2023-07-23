@@ -343,6 +343,15 @@ public class MediaService {
         }
     }
 
+    public MediaRow getMedia(long id) {
+        try {
+            return this.mediaTable.getByPrimaryKey(id)
+                    .orElse(null);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get media for id [" + id + "]: " + e.getMessage(), e);
+        }
+    }
+
     public MediaServiceConfiguration getSettings() {
         return configuration;
     }

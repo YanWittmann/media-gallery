@@ -94,3 +94,11 @@ By double-clicking a media file in the timeline, you can reveal it in your file 
 The application will keep the thumbnails it generates for up to 5 minutes to speed up repeated access. These files might
 not be removed properly if you simply end the task. To properly exit the application, click on the `Settings` button at
 the top of the page and then on `Clean up and Shutdown`.
+
+## Todo
+
+- preloading of 2 images
+- add file information to large display of image and open in file explorer
+- add more image and video formats
+- "jump to date and directory" should disable loading of pages until the date is reached
+- "jump to date and directory" should not try to scroll for a fixed amount of time, but rather until the date is reached

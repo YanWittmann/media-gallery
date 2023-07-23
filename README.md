@@ -97,5 +97,4 @@ the top of the page and then on `Clean up and Shutdown`.
 
 ## Todo
 
-- preloading of 2 images
 - add file information to large display of image and open in file explorer

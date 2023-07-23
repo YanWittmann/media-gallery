@@ -140,7 +140,7 @@ function loadPage(page, scrollIntoView = false) {
             if (scrollIntoView) {
                 const scrollTo = findLastElement(addedItems);
                 if (scrollTo) {
-                    disableWebpage(1);
+                    disableWebpage(3);
                     isCurrentlyJumpingToPage = true;
                     loadPage(page - 1, false);
                     loadImage(scrollTo);
@@ -419,8 +419,12 @@ function openInEnclosingFolder(id) {
     axios.get(`/system/show-in-folder/${id}`);
 }
 
-function getNextFullSizeImageId() {
-    return document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).nextSibling;
+function getNextFullSizeImageId(id = currentlyActiveFullscreenImageId) {
+    return document.querySelector(`.gallery-item-container[data-id="${id}"]`).nextSibling;
+}
+
+function getPreviousFullSizeImageId(id = currentlyActiveFullscreenImageId) {
+    return document.querySelector(`.gallery-item-container[data-id="${id}"]`).previousSibling;
 }
 
 function nextFullSizeImage() {
@@ -429,18 +433,15 @@ function nextFullSizeImage() {
         nextImage.scrollIntoView();
         try {
             tryToPreloadImage(`/media/get/${nextImage.nextSibling.dataset.id}/full`);
+            const nextNextImage = nextImage.nextSibling;
+            if (nextNextImage) {
+                tryToPreloadImage(`/media/get/${nextNextImage.nextSibling.dataset.id}/full`);
+            }
         } catch (e) {
             console.log(e);
         }
         showFullSizeImage(nextImage);
-    } else {
-        //console.log('loading next page to find next image')
-        //loadPage();
     }
-}
-
-function getPreviousFullSizeImageId() {
-    return document.querySelector(`.gallery-item-container[data-id="${currentlyActiveFullscreenImageId}"]`).previousSibling;
 }
 
 function previousFullSizeImage() {
@@ -449,6 +450,10 @@ function previousFullSizeImage() {
         previousImage.scrollIntoView();
         try {
             tryToPreloadImage(`/media/get/${previousImage.previousSibling.dataset.id}/full`);
+            const previousPreviousImage = previousImage.previousSibling;
+            if (previousPreviousImage) {
+                tryToPreloadImage(`/media/get/${previousPreviousImage.previousSibling.dataset.id}/full`);
+            }
         } catch (e) {
             console.log(e);
         }

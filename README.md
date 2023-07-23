@@ -99,4 +99,3 @@ the top of the page and then on `Clean up and Shutdown`.
 
 - preloading of 2 images
 - add file information to large display of image and open in file explorer
-- add more image and video formats

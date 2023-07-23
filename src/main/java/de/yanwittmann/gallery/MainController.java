@@ -86,12 +86,19 @@ public class MainController {
         return buildResponseEntityForFile(file);
     }
 
+    private String getFileExtension(File file) {
+        String fileName = file.getName();
+        if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0)
+            return fileName.substring(fileName.lastIndexOf(".")+1);
+        else return "";
+    }
+
     @GetMapping("/media/get/{id}/thumb/{size}")
     public ResponseEntity<Resource> getMediaThumb(@PathVariable long id, @PathVariable int size) throws IOException {
         final File file = mediaService.getMediaFile(id);
         if (file == null) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
-        File thumbnailFile = ImageUtil.createThumbnail(file, new File(MediaGalleryConfig.getThumbsDir(), size + "-" + MediaService.hash(file.getAbsolutePath()) + ".png"), size);
+        File thumbnailFile = ImageUtil.createThumbnail(file, new File(MediaGalleryConfig.getThumbsDir(), size + "-" + MediaService.hash(file.getAbsolutePath()) + "." + getFileExtension(file)), size);
 
         return buildResponseEntityForFile(thumbnailFile);
     }
@@ -100,7 +107,7 @@ public class MainController {
     public String getMediaType(@PathVariable long id) {
         final File file = mediaService.getMediaFile(id);
         return new JSONObject()
-                .put("type", file == null ? "unknown" : file.getName().endsWith(".mp4") ? "vid" : "img")
+                .put("type", file == null ? "unknown" : (file.getName().endsWith(".mp4") || file.getName().endsWith(".mov")) ? "vid" : "img")
                 .toString();
     }
 

@@ -61,7 +61,7 @@ public class ImageUtil {
             }
 
             BufferedImage originalImage;
-            if (originalFile.getName().endsWith(".mp4")) {
+            if (originalFile.getName().endsWith(".mp4") || originalFile.getName().endsWith(".mov")) {
                 try {
                     originalImage = extractFirstFrameFromVideo(originalFile);
                 } catch (FrameGrabber.Exception e) {
@@ -96,9 +96,10 @@ public class ImageUtil {
 
             ImageIO.write(thumbnailImage, "png", thumbnailFile);
 
-            return thumbnailFile;
-        } catch (IOException e) {
-            throw new IOException("Failed to create thumbnail for file: " + originalFile.getAbsolutePath(), e);
+        } catch (Exception e) {
+            Files.copy(originalFile.toPath(), thumbnailFile.toPath());
         }
+
+        return thumbnailFile;
     }
 }

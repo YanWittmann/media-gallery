@@ -69,7 +69,10 @@ public class MediaService {
 
         FileWalkerUtils.walkFileTreeMultiThreaded(
                 Path.of(mediaDirectory.toURI()),
-                FileWalkerUtils.extensionFilter("jpg", "jpeg", "png", "gif", "mov", "mp4"),
+                FileWalkerUtils.extensionFilter(
+                        "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg",
+                        "mov", "mp4"
+                ),
                 path -> true,
                 file -> processFile(basePathHash, file),
                 Math.min(8, Runtime.getRuntime().availableProcessors())

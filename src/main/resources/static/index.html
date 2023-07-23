@@ -131,8 +131,13 @@
                     <div class="row">
                         <div class="col-12">
                             <h5>Application</h5>
-                            <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application"
-                                    onclick="sendApplicationShutdown()">Clean up and Shutdown
+                            <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application-cleanup-1"
+                                    title="This will clean up all thumbnails, but leave the database and configuration files."
+                                    onclick="sendApplicationShutdown(1)">Clean up thumbnails, then Shutdown
+                            </button>
+                            <button type="button" class="btn btn-danger mt-2 mb-3" id="shutdown-application-cleanup-2"
+                                    title="This will effectively clean up the installation by removing the thumbnails, database and configuration files."
+                                    onclick="sendApplicationShutdown(2)">Clean up all stored files, then Shutdown
                             </button>
                         </div>
                     </div>

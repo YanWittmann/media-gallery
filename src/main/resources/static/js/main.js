@@ -16,8 +16,8 @@ let totalPages = 0;
 let pagesToBeLoaded = [];
 
 let pagesSummaryEntries = [];
-
 let currentlyActiveFullscreenImageId = null;
+let isCurrentlyJumpingToPage = false;
 
 let orderBy = 'date';
 let orderAsc = false;
@@ -29,7 +29,7 @@ softReloadPage();
 // Intersection Observer to load the next page when the user scrolls to the bottom
 const pageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !isCurrentlyJumpingToPage) {
             pageObserver.unobserve(entry.target);
             loadPage(parseInt(entry.target.dataset.loadPageIndex));
         }
@@ -51,11 +51,15 @@ const imageObserver = new IntersectionObserver(entries => {
 });
 
 function loadPage(page, scrollIntoView = false) {
+    if (page < 0) {
+        return;
+    }
+
     const isLargerThanTotalPages = page >= totalPages;
     const isNotToBeLoaded = !pagesToBeLoaded.includes(page);
 
     if (isLargerThanTotalPages || isNotToBeLoaded) {
-        console.log(`Skipping loading page ${page}...`, isLargerThanTotalPages, isNotToBeLoaded)
+        console.log(`Skipping loading page ${page}`)
 
         if (scrollIntoView) {
             scrollToPage(page);
@@ -136,17 +140,31 @@ function loadPage(page, scrollIntoView = false) {
             if (scrollIntoView) {
                 const scrollTo = findLastElement(addedItems);
                 if (scrollTo) {
-                    disableWebpage(3);
+                    disableWebpage(1);
+                    isCurrentlyJumpingToPage = true;
                     loadPage(page - 1, false);
                     loadImage(scrollTo);
-                    for (let i = 100; i < 4000; i++) {
-                        setTimeout(() => {
-                            scrollTo.scrollIntoView();
-                            if (i === 3999) {
-                                enableWebpage();
-                            }
-                        }, i);
-                    }
+
+                    let wasVisibleCount = 0;
+                    let iterations = 0;
+                    const inViewPadding = 100;
+                    let interval = setInterval(() => {
+                        scrollTo.scrollIntoView();
+                        const rect = scrollTo.getBoundingClientRect();
+                        const isInView = (
+                            rect.top >= -inViewPadding &&
+                            rect.left >= -inViewPadding &&
+                            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) + inViewPadding &&
+                            rect.right <= (window.innerWidth || document.documentElement.clientWidth) + inViewPadding
+                        );
+                        wasVisibleCount += isInView ? 1 : 0;
+                        iterations++;
+                        if (wasVisibleCount > 10 || iterations > 100) {
+                            enableWebpage();
+                            isCurrentlyJumpingToPage = false;
+                            clearInterval(interval);
+                        }
+                    }, 100);
                 }
             }
         });
@@ -298,6 +316,7 @@ function unloadImage(placeholder) {
 function softReloadPage() {
     pagesToBeLoaded = [];
     totalPages = 0;
+    isCurrentlyJumpingToPage = false;
     while (gallery.firstChild) {
         pageObserver.unobserve(gallery.firstChild)
         imageObserver.unobserve(gallery.firstChild)
@@ -701,18 +720,24 @@ function setReindexOnStartup(checked) {
         });
 }
 
-function sendApplicationShutdown() {
-    const shutdownApplicationButton = document.getElementById('shutdown-application');
-    shutdownApplicationButton.disabled = true;
+function sendApplicationShutdown(type) {
+    const shutdownApplicationButton1 = document.getElementById('shutdown-application-cleanup-1');
+    const shutdownApplicationButton2 = document.getElementById('shutdown-application-cleanup-2');
+    shutdownApplicationButton1.disabled = true;
+    shutdownApplicationButton2.disabled = true;
 
-    axios.get('/system/shutdown')
+    axios.get('/system/shutdown/' + type)
         .then(response => {
-            shutdownApplicationButton.disabled = false;
-            shutdownApplicationButton.innerText = 'Failed to shutdown application';
+            shutdownApplicationButton1.disabled = false;
+            shutdownApplicationButton1.innerText = 'Failed to shutdown application';
+            shutdownApplicationButton2.disabled = false;
+            shutdownApplicationButton2.innerText = 'Failed to shutdown application';
         })
         .catch(error => {
-            shutdownApplicationButton.disabled = false;
-            shutdownApplicationButton.innerText = 'Application terminated successfully';
+            shutdownApplicationButton1.disabled = false;
+            shutdownApplicationButton1.innerText = 'Application terminated successfully';
+            shutdownApplicationButton2.disabled = false;
+            shutdownApplicationButton2.innerText = 'Application terminated successfully';
         });
 }
 

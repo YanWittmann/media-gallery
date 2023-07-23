@@ -4,6 +4,7 @@ import de.yanwittmann.gallery.media.MediaService;
 import de.yanwittmann.gallery.media.config.ConfigField;
 import de.yanwittmann.gallery.media.db.MediaRow;
 import de.yanwittmann.gallery.util.ImageUtil;
+import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -124,8 +125,11 @@ public class MainController {
                 .toString();
     }
 
-    @GetMapping("/system/shutdown")
-    public String getSystemExitAndShutdown() {
+    @GetMapping("/system/shutdown/{type}")
+    public String getSystemExitAndShutdown(@PathVariable int type) throws IOException {
+        if (type == 2) {
+            FileUtils.deleteDirectory(MediaGalleryConfig.getBaseSaveDirectory());
+        }
         AppEntryPoint.stop();
         // lolol as if this would ever be reached
         return new JSONObject().put("success", true).toString();
